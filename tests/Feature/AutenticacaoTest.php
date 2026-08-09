@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\PerfilPrestador;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -19,9 +20,17 @@ class AutenticacaoTest extends TestCase
 
     public function test_usuario_autenticado_acessa_painel(): void
     {
-        User::factory()->create([
+        $usuario = User::factory()->create([
             'email' => 'prestador@example.com',
+            'tipo' => 'prestador',
             'password' => Hash::make('senha-segura'),
+        ]);
+
+        PerfilPrestador::create([
+            'usuario_id' => $usuario->id,
+            'nome_publico' => 'Prestador Teste',
+            'slug' => 'prestador-teste',
+            'status' => 'ativo',
         ]);
 
         $this->post('/login', [

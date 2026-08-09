@@ -22,12 +22,15 @@ class PainelPrestadorController extends Controller
             ->get();
         $recebidoMes = $agendamentosMes->sum(fn (Agendamento $agendamento) => (float) ($agendamento->servico->preco ?? 0));
         $atendimentosMes = $agendamentosMes->count();
+        $metaRecebimentoMes = max(1, (float) ($prestador->assinatura?->plano?->valor_mensal ?? 0));
 
         return view('prestador.painel', [
             'prestador' => $prestador,
             'agendamentosHoje' => Agendamento::when($prestador, fn ($query) => $query->where('prestador_id', $prestador->id))->whereDate('inicio_em', today())->count(),
             'atendimentosMes' => $atendimentosMes,
             'recebidoMes' => $recebidoMes,
+            'metaRecebimentoMes' => $metaRecebimentoMes,
+            'percentualRecebidoMes' => min(100, ($recebidoMes / $metaRecebimentoMes) * 100),
             'ticketMedioMes' => $atendimentosMes > 0 ? $recebidoMes / $atendimentosMes : 0,
             'proximosAgendamentos' => Agendamento::with(['cliente', 'servico', 'profissional'])->when($prestador, fn ($query) => $query->where('prestador_id', $prestador->id))->where('inicio_em', '>=', now())->orderBy('inicio_em')->limit(8)->get(),
             'servicosAtivos' => Servico::when($prestador, fn ($query) => $query->where('prestador_id', $prestador->id))->where('status', 'publicado')->count(),

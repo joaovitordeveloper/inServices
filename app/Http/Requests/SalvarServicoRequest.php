@@ -35,6 +35,7 @@ class SalvarServicoRequest extends FormRequest
             'antecedencia_minima_minutos' => ['required', 'integer', 'min:0'],
             'limite_dias_futuros' => ['required', 'integer', 'min:1', 'max:365'],
             'permite_escolher_profissional' => ['nullable', 'boolean'],
+            'imagem' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'profissionais' => ['array'],
             'profissionais.*' => ['integer', 'exists:profissionais,id'],
         ];

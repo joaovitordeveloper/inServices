@@ -23,7 +23,7 @@
         </div>
 
         <div class="resumo-linhas">
-            <div class="resumo-linha"><span>Total recebido</span><strong>R$ {{ number_format($recebidoMes, 2, ',', '.') }}</strong><i style="width: 100%"></i></div>
+            <div class="resumo-linha"><span>Total recebido</span><strong>R$ {{ number_format($recebidoMes, 2, ',', '.') }}</strong><i style="width: {{ $percentualRecebidoMes }}%"></i><small>Meta do mes: R$ {{ number_format($metaRecebimentoMes, 2, ',', '.') }}</small></div>
             <div class="resumo-linha"><span>Atendimentos</span><strong>{{ $atendimentosMes }}</strong><i style="width: {{ min(100, $atendimentosMes * 10) }}%"></i></div>
             <div class="resumo-linha"><span>Servicos ativos</span><strong>{{ $servicosAtivos }}</strong><i style="width: {{ min(100, $servicosAtivos * 20) }}%"></i></div>
             <div class="resumo-linha"><span>Profissionais ativos</span><strong>{{ $profissionaisAtivos }}</strong><i style="width: {{ min(100, $profissionaisAtivos * 20) }}%"></i></div>
@@ -34,9 +34,17 @@
     <section class="dashboard-panel">
         <h2>Plano atual</h2>
         <div class="plano-resumo">
-            <span>{{ $prestador?->assinatura?->plano?->nome ?? 'Nao configurado' }}</span>
-            <strong>{{ ucfirst($prestador?->assinatura?->status ?? 'sem assinatura') }}</strong>
-            <p>Proximo vencimento: {{ $prestador?->assinatura?->data_proximo_vencimento?->format('d/m/Y') ?? '-' }}</p>
+            <div class="plano-linha-principal">
+                <span>{{ $prestador?->assinatura?->plano?->nome ?? 'Nao configurado' }}</span>
+                <strong>Vence em {{ $prestador?->assinatura?->data_proximo_vencimento?->format('d/m/Y') ?? '-' }}</strong>
+            </div>
+            <ul class="plano-permissoes">
+                <li>{{ $prestador?->assinatura?->plano?->quantidade_maxima_servicos ? $prestador->assinatura->plano->quantidade_maxima_servicos.' servicos' : 'Servicos ilimitados' }}</li>
+                <li>{{ $prestador?->assinatura?->plano?->quantidade_maxima_profissionais ? $prestador->assinatura->plano->quantidade_maxima_profissionais.' profissionais' : 'Profissionais ilimitados' }}</li>
+                <li>{{ $prestador?->assinatura?->plano?->quantidade_maxima_agendamentos_mes ? $prestador->assinatura->plano->quantidade_maxima_agendamentos_mes.' agendamentos por mes' : 'Agendamentos ilimitados' }}</li>
+                <li>{{ $prestador?->assinatura?->plano?->permite_web_push ? 'Notificacoes inclusas' : 'Sem notificacoes' }}</li>
+                <li>{{ $prestador?->assinatura?->plano?->permite_relatorios ? 'Relatorios inclusos' : 'Sem relatorios' }}</li>
+            </ul>
         </div>
     </section>
 </div>

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\SalvarServicoRequest;
 use App\Models\Servico;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class ServicosController extends Controller
@@ -65,7 +66,8 @@ class ServicosController extends Controller
         $prestador = $this->prestador();
         abort_unless($servico->prestador_id === $prestador->id, 404);
 
-        $servico->update($this->dados($request));
+        $dados = $this->dados($request, $servico);
+        $servico->update($dados);
         $servico->profissionais()->sync($request->input('profissionais', []));
 
         return redirect()->route('prestador.servicos.index')->with('status', 'Servico atualizado com sucesso.');
@@ -81,9 +83,9 @@ class ServicosController extends Controller
         return redirect()->route('prestador.servicos.index')->with('status', $servico->status === 'publicado' ? 'Servico publicado.' : 'Servico inativado.');
     }
 
-    private function dados(SalvarServicoRequest $request): array
+    private function dados(SalvarServicoRequest $request, ?Servico $servico = null): array
     {
-        return [
+        $dados = [
             'nome' => $request->string('nome')->toString(),
             'slug' => $request->input('slug'),
             'descricao' => $request->input('descricao'),
@@ -96,6 +98,16 @@ class ServicosController extends Controller
             'limite_dias_futuros' => $request->integer('limite_dias_futuros'),
             'permite_escolher_profissional' => $request->boolean('permite_escolher_profissional'),
         ];
+
+        if ($request->hasFile('imagem')) {
+            if ($servico?->imagem) {
+                Storage::disk('public')->delete($servico->imagem);
+            }
+
+            $dados['imagem'] = $request->file('imagem')->store('servicos', 'public');
+        }
+
+        return $dados;
     }
 
     private function prestador()

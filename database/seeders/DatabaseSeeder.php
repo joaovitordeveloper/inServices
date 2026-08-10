@@ -127,7 +127,7 @@ class DatabaseSeeder extends Seeder
 
         foreach ([
             'confirmacao' => 'Ola, {nome_cliente}. Seu agendamento para {servico} com {profissional} esta confirmado para {data} as {horario}.',
-            'contato' => 'Ola, {nome_cliente}. Precisamos falar sobre seu agendamento de {servico} marcado para {data} as {horario}.',
+            'contato' => '',
             'lembrete' => 'Ola, {nome_cliente}. Este e um lembrete do seu agendamento de {servico} com {profissional} em {data} as {horario}.',
         ] as $nome => $mensagem) {
             ModeloMensagemWhatsapp::firstOrCreate(['prestador_id' => $prestador->id, 'nome' => $nome], ['mensagem' => $mensagem, 'ativo' => true]);

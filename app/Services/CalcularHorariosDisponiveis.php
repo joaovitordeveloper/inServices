@@ -47,7 +47,7 @@ class CalcularHorariosDisponiveis
             for ($cursor = $inicio; $cursor->addMinutes($duracao)->lte($fim); $cursor = $cursor->addMinutes($passo)) {
                 $termino = $cursor->addMinutes($duracao);
 
-                if ($this->periodoLivre($cursor, $termino, $bloqueios, $ocupados)) {
+                if ($this->periodoLivre($cursor, $termino, $bloqueios, $ocupados) && $this->foraDoAlmoco($cursor, $termino, $regra)) {
                     $horarios->push([
                         'profissional_id' => $profissional->id,
                         'profissional' => $profissional->nome,
@@ -80,5 +80,17 @@ class CalcularHorariosDisponiveis
         }
 
         return true;
+    }
+
+    private function foraDoAlmoco(CarbonImmutable $inicio, CarbonImmutable $fim, object $regra): bool
+    {
+        if (! $regra->almoco_inicio || ! $regra->almoco_fim) {
+            return true;
+        }
+
+        $almocoInicio = $inicio->setTimeFromTimeString($regra->almoco_inicio);
+        $almocoFim = $inicio->setTimeFromTimeString($regra->almoco_fim);
+
+        return ! ($inicio->lt($almocoFim) && $fim->gt($almocoInicio));
     }
 }

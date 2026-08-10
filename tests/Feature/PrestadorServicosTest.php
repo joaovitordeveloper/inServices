@@ -2,8 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Models\Assinatura;
 use App\Models\PerfilPrestador;
+use App\Models\Plano;
 use App\Models\Profissional;
+use App\Models\Servico;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -51,6 +54,52 @@ class PrestadorServicosTest extends TestCase
         ]);
 
         Storage::disk('public')->assertExists($prestador->servicos()->firstOrFail()->imagem);
+    }
+
+    public function test_nao_cadastra_servico_acima_do_limite_do_plano(): void
+    {
+        $usuario = User::factory()->create(['tipo' => 'prestador']);
+        $prestador = PerfilPrestador::create([
+            'usuario_id' => $usuario->id,
+            'nome_publico' => 'Prestador Limite',
+            'slug' => 'prestador-limite',
+            'status' => 'ativo',
+        ]);
+        $plano = Plano::create([
+            'nome' => 'Servico unico',
+            'valor_mensal' => 19.90,
+            'quantidade_maxima_servicos' => 1,
+            'ativo' => true,
+        ]);
+        Assinatura::create([
+            'prestador_id' => $prestador->id,
+            'plano_id' => $plano->id,
+            'status' => 'teste',
+            'data_inicio' => now()->toDateString(),
+            'data_proximo_vencimento' => now()->addMonth()->toDateString(),
+        ]);
+        Servico::create([
+            'prestador_id' => $prestador->id,
+            'nome' => 'Ja existe',
+            'slug' => 'ja-existe',
+            'duracao_minutos' => 30,
+            'status' => 'publicado',
+        ]);
+
+        $this->actingAs($usuario)
+            ->post(route('prestador.servicos.store'), [
+                'nome' => 'Segundo servico',
+                'duracao_minutos' => 30,
+                'intervalo_adicional_minutos' => 0,
+                'preco' => '10,00',
+                'status' => 'publicado',
+                'ordem_exibicao' => 1,
+                'antecedencia_minima_minutos' => 30,
+                'limite_dias_futuros' => 30,
+            ])
+            ->assertSessionHasErrors('nome');
+
+        $this->assertSame(1, $prestador->servicos()->count());
     }
 
     private function imagemJpegFake(): UploadedFile

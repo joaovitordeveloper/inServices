@@ -8,7 +8,9 @@ use App\Http\Controllers\Auth\CadastroPrestadorController;
 use App\Http\Controllers\Auth\SessaoController;
 use App\Http\Controllers\ContaController;
 use App\Http\Controllers\Prestador\AgendaController;
+use App\Http\Controllers\Prestador\AssinaturaController;
 use App\Http\Controllers\Prestador\ClientesController;
+use App\Http\Controllers\Prestador\MensagensWhatsappController;
 use App\Http\Controllers\Prestador\PainelPrestadorController;
 use App\Http\Controllers\Prestador\ServicosController;
 use App\Http\Controllers\Publico\AgendamentoPublicoController;
@@ -63,10 +65,16 @@ Route::middleware('auth')->group(function () {
     Route::get('/painel/clientes', [ClientesController::class, 'index'])->name('prestador.clientes.index');
     Route::get('/painel/clientes/{cliente}/editar', [ClientesController::class, 'edit'])->name('prestador.clientes.edit');
     Route::put('/painel/clientes/{cliente}', [ClientesController::class, 'update'])->name('prestador.clientes.update');
+    Route::get('/painel/assinatura', [AssinaturaController::class, 'edit'])->name('prestador.assinatura.edit');
+    Route::put('/painel/assinatura', [AssinaturaController::class, 'update'])->name('prestador.assinatura.update');
+    Route::get('/painel/mensagens-whatsapp', [MensagensWhatsappController::class, 'edit'])->name('prestador.mensagens-whatsapp.edit');
+    Route::put('/painel/mensagens-whatsapp', [MensagensWhatsappController::class, 'update'])->name('prestador.mensagens-whatsapp.update');
 });
 
-Route::prefix('agendar/{prestador:slug}')->name('publico.agendamento.')->group(function () {
+Route::prefix('agendar/{prestador:uuid_publico}')->name('publico.agendamento.')->group(function () {
     Route::get('/', [AgendamentoPublicoController::class, 'index'])->name('index');
-    Route::get('/{servico:slug}', [AgendamentoPublicoController::class, 'servico'])->name('servico');
-    Route::get('/{servico:slug}/horarios', [AgendamentoPublicoController::class, 'horarios'])->name('horarios');
+    Route::post('/identificar', [AgendamentoPublicoController::class, 'identificar'])->name('identificar');
+    Route::get('/{servico:uuid_publico}', [AgendamentoPublicoController::class, 'servico'])->name('servico');
+    Route::get('/{servico:uuid_publico}/horarios', [AgendamentoPublicoController::class, 'horarios'])->name('horarios');
+    Route::post('/{servico:uuid_publico}/confirmar', [AgendamentoPublicoController::class, 'confirmar'])->name('confirmar');
 });

@@ -8,6 +8,7 @@ use App\Http\Requests\SalvarRegraDisponibilidadeRequest;
 use App\Models\RegraDisponibilidade;
 use App\Services\ServicoTelefone;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class AgendaController extends Controller
@@ -29,7 +30,16 @@ class AgendaController extends Controller
 
     public function storeProfissional(SalvarProfissionalRequest $request, ServicoTelefone $telefones): RedirectResponse
     {
-        $this->prestador()->profissionais()->create([
+        $prestador = $this->prestador()->load('assinatura.plano');
+        $limite = $prestador->assinatura?->plano?->quantidade_maxima_profissionais;
+
+        if ($limite && $prestador->profissionais()->count() >= $limite) {
+            throw ValidationException::withMessages([
+                'nome' => "Seu plano permite cadastrar ate {$limite} profissional(is).",
+            ]);
+        }
+
+        $prestador->profissionais()->create([
             'nome' => $request->string('nome')->toString(),
             'cargo' => $request->input('cargo'),
             'telefone' => $request->input('telefone'),
@@ -46,14 +56,18 @@ class AgendaController extends Controller
         $prestador = $this->prestador();
         $profissional = $prestador->profissionais()->findOrFail($request->integer('profissional_id'));
 
-        $profissional->regrasDisponibilidade()->create([
-            'dia_semana' => $request->integer('dia_semana'),
-            'horario_inicio' => $request->input('horario_inicio'),
-            'horario_fim' => $request->input('horario_fim'),
-            'ativo' => $request->boolean('ativo', true),
-        ]);
+        foreach (collect($request->input('dias_semana', []))->map(fn ($dia) => (int) $dia)->unique() as $diaSemana) {
+            $profissional->regrasDisponibilidade()->create([
+                'dia_semana' => $diaSemana,
+                'horario_inicio' => $request->input('horario_inicio'),
+                'horario_fim' => $request->input('horario_fim'),
+                'almoco_inicio' => $request->input('almoco_inicio'),
+                'almoco_fim' => $request->input('almoco_fim'),
+                'ativo' => $request->boolean('ativo', true),
+            ]);
+        }
 
-        return redirect()->route('prestador.agenda.index')->with('status', 'Horario cadastrado com sucesso.');
+        return redirect()->route('prestador.agenda.index')->with('status', 'Horarios cadastrados com sucesso.');
     }
 
     public function destroyRegra(RegraDisponibilidade $regra): RedirectResponse

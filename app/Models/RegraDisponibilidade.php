@@ -12,7 +12,7 @@ class RegraDisponibilidade extends Model
 
     protected $table = 'regras_disponibilidade';
 
-    protected $fillable = ['profissional_id', 'dia_semana', 'horario_inicio', 'horario_fim', 'ativo'];
+    protected $fillable = ['profissional_id', 'dia_semana', 'horario_inicio', 'horario_fim', 'almoco_inicio', 'almoco_fim', 'ativo'];
 
     protected function casts(): array
     {

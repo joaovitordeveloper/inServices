@@ -43,4 +43,40 @@ class DisponibilidadeTest extends TestCase
 
         $this->assertCount(2, $horarios->where('inicio', '2026-08-10 14:00:00'));
     }
+
+    public function test_nao_oferece_horarios_durante_o_almoco(): void
+    {
+        $prestador = PerfilPrestador::create([
+            'usuario_id' => User::factory()->create()->id,
+            'nome_publico' => 'Prestador Almoco',
+            'slug' => 'prestador-almoco',
+            'status' => 'ativo',
+        ]);
+
+        $servico = Servico::create([
+            'prestador_id' => $prestador->id,
+            'nome' => 'Servico',
+            'slug' => 'servico',
+            'duracao_minutos' => 60,
+            'intervalo_adicional_minutos' => 0,
+            'status' => 'publicado',
+        ]);
+
+        $profissional = Profissional::create(['prestador_id' => $prestador->id, 'nome' => 'Ana', 'ativo' => true]);
+        $profissional->servicos()->attach($servico->id, ['ativo' => true]);
+        RegraDisponibilidade::create([
+            'profissional_id' => $profissional->id,
+            'dia_semana' => 1,
+            'horario_inicio' => '09:00',
+            'horario_fim' => '17:00',
+            'almoco_inicio' => '12:00',
+            'almoco_fim' => '13:00',
+        ]);
+
+        $horarios = app(CalcularHorariosDisponiveis::class)->executar($servico, CarbonImmutable::parse('2026-08-10'));
+
+        $this->assertTrue($horarios->contains('inicio', '2026-08-10 11:00:00'));
+        $this->assertFalse($horarios->contains('inicio', '2026-08-10 12:00:00'));
+        $this->assertTrue($horarios->contains('inicio', '2026-08-10 13:00:00'));
+    }
 }

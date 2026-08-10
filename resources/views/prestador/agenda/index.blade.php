@@ -32,16 +32,19 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-md-4">
-                    <label class="form-label">Dia</label>
-                    <select class="form-select" name="dia_semana" required>
+                <div class="col-12">
+                    <label class="form-label">Dias de trabalho</label>
+                    <select class="form-select select2-dias" name="dias_semana[]" multiple data-multiselect-tags data-placeholder="Selecione os dias">
                         @foreach([0 => 'Domingo', 1 => 'Segunda', 2 => 'Terca', 3 => 'Quarta', 4 => 'Quinta', 5 => 'Sexta', 6 => 'Sabado'] as $dia => $nome)
                             <option value="{{ $dia }}">{{ $nome }}</option>
                         @endforeach
                     </select>
+                    <small class="text-muted">Escolha todos os dias em que esse profissional trabalha nesse horario.</small>
                 </div>
-                <div class="col-md-4"><label class="form-label">Inicio</label><input class="form-control" name="horario_inicio" type="time" required></div>
-                <div class="col-md-4"><label class="form-label">Fim</label><input class="form-control" name="horario_fim" type="time" required></div>
+                <div class="col-md-6"><label class="form-label">Inicio do trabalho</label><input class="form-control" name="horario_inicio" type="time" required></div>
+                <div class="col-md-6"><label class="form-label">Fim do trabalho</label><input class="form-control" name="horario_fim" type="time" required></div>
+                <div class="col-md-6"><label class="form-label">Inicio do almoco</label><input class="form-control" name="almoco_inicio" type="time"></div>
+                <div class="col-md-6"><label class="form-label">Fim do almoco</label><input class="form-control" name="almoco_fim" type="time"></div>
             </div>
             <button class="btn btn-template-primary mt-3" type="submit">Cadastrar horario</button>
         </form>
@@ -52,14 +55,20 @@
     <h2>Horarios cadastrados</h2>
     <div class="table-responsive">
         <table class="table tabela-dados">
-            <thead><tr><th>Profissional</th><th>Dia</th><th>Inicio</th><th>Fim</th><th>Acoes</th></tr></thead>
+            <thead><tr><th>Profissional</th><th>Dia</th><th>Trabalho</th><th>Almoco</th><th>Acoes</th></tr></thead>
             <tbody>
             @foreach($regras as $regra)
                 <tr>
                     <td>{{ $regra->profissional->nome }}</td>
                     <td>{{ [0 => 'Domingo', 1 => 'Segunda', 2 => 'Terca', 3 => 'Quarta', 4 => 'Quinta', 5 => 'Sexta', 6 => 'Sabado'][$regra->dia_semana] }}</td>
-                    <td>{{ substr($regra->horario_inicio, 0, 5) }}</td>
-                    <td>{{ substr($regra->horario_fim, 0, 5) }}</td>
+                    <td>{{ substr($regra->horario_inicio, 0, 5) }} ate {{ substr($regra->horario_fim, 0, 5) }}</td>
+                    <td>
+                        @if($regra->almoco_inicio && $regra->almoco_fim)
+                            {{ substr($regra->almoco_inicio, 0, 5) }} ate {{ substr($regra->almoco_fim, 0, 5) }}
+                        @else
+                            -
+                        @endif
+                    </td>
                     <td>
                         <form method="post" action="{{ route('prestador.agenda.regras.destroy', $regra) }}" data-boxalert="Deseja remover este horario?">
                             @csrf

@@ -18,40 +18,77 @@
                 <p class="section-subtitle">{{ now()->translatedFormat('F \\d\\e Y') }}</p>
             </div>
             @if($prestador)
-                <a class="btn btn-template-primary btn-sm" href="{{ route('publico.agendamento.index', $prestador) }}">Link publico</a>
+                <a class="btn btn-template-primary btn-sm" href="{{ route('publico.agendamento.index', ['prestador' => $prestador->uuid_publico]) }}">Link publico</a>
             @endif
         </div>
 
         <div class="resumo-linhas">
             <div class="resumo-linha"><span>Total recebido</span><strong>R$ {{ number_format($recebidoMes, 2, ',', '.') }}</strong><i style="width: {{ $percentualRecebidoMes }}%"></i><small>Meta do mes: R$ {{ number_format($metaRecebimentoMes, 2, ',', '.') }}</small></div>
             <div class="resumo-linha"><span>Atendimentos</span><strong>{{ $atendimentosMes }}</strong><i style="width: {{ min(100, $atendimentosMes * 10) }}%"></i></div>
-            <div class="resumo-linha"><span>Servicos ativos</span><strong>{{ $servicosAtivos }}</strong><i style="width: {{ min(100, $servicosAtivos * 20) }}%"></i></div>
-            <div class="resumo-linha"><span>Profissionais ativos</span><strong>{{ $profissionaisAtivos }}</strong><i style="width: {{ min(100, $profissionaisAtivos * 20) }}%"></i></div>
-            <div class="resumo-linha"><span>Clientes recentes</span><strong>{{ $clientesRecentes->count() }}</strong><i style="width: {{ min(100, $clientesRecentes->count() * 20) }}%"></i></div>
+            <div class="resumo-linha"><span>Ticket medio</span><strong>R$ {{ number_format($ticketMedioMes, 2, ',', '.') }}</strong><i style="width: {{ min(100, $ticketMedioMes) }}%"></i></div>
         </div>
     </section>
 
     <section class="dashboard-panel">
-        <h2>Plano atual</h2>
-        <div class="plano-resumo">
-            <div class="plano-linha-principal">
-                <span>{{ $prestador?->assinatura?->plano?->nome ?? 'Nao configurado' }}</span>
-                <strong>Vence em {{ $prestador?->assinatura?->data_proximo_vencimento?->format('d/m/Y') ?? '-' }}</strong>
+        <div class="section-title">
+            <div>
+                <h2>Agenda de hoje</h2>
+                <p class="section-subtitle">Agendamentos por profissional</p>
             </div>
-            <ul class="plano-permissoes">
-                <li>{{ $prestador?->assinatura?->plano?->quantidade_maxima_servicos ? $prestador->assinatura->plano->quantidade_maxima_servicos.' servicos' : 'Servicos ilimitados' }}</li>
-                <li>{{ $prestador?->assinatura?->plano?->quantidade_maxima_profissionais ? $prestador->assinatura->plano->quantidade_maxima_profissionais.' profissionais' : 'Profissionais ilimitados' }}</li>
-                <li>{{ $prestador?->assinatura?->plano?->quantidade_maxima_agendamentos_mes ? $prestador->assinatura->plano->quantidade_maxima_agendamentos_mes.' agendamentos por mes' : 'Agendamentos ilimitados' }}</li>
-                <li>{{ $prestador?->assinatura?->plano?->permite_web_push ? 'Notificacoes inclusas' : 'Sem notificacoes' }}</li>
-                <li>{{ $prestador?->assinatura?->plano?->permite_relatorios ? 'Relatorios inclusos' : 'Sem relatorios' }}</li>
-            </ul>
+            <strong class="today-count">{{ $agendamentosHoje }}</strong>
+        </div>
+
+        <div class="agenda-profissionais">
+            @forelse($agendamentosHojePorProfissional as $profissional)
+                <article class="agenda-profissional-card">
+                    <div>
+                        <strong>{{ $profissional->nome }}</strong>
+                        <span>{{ $profissional->agendamentos->count() }} hoje</span>
+                    </div>
+
+                    @forelse($profissional->agendamentos as $agendamento)
+                        <div class="agenda-dia-item">
+                            <time>{{ $agendamento->inicio_em->format('H:i') }}</time>
+                            <span>{{ $agendamento->cliente->nome }}</span>
+                            <small>{{ $agendamento->servico->nome }}</small>
+                        </div>
+                    @empty
+                        <p class="empty-line">Sem agendamentos hoje.</p>
+                    @endforelse
+                </article>
+            @empty
+                <div class="empty-state">Nenhum profissional ativo cadastrado.</div>
+            @endforelse
+        </div>
+    </section>
+
+    <section class="dashboard-panel">
+        <div class="section-title">
+            <div>
+                <h2>Resumo por profissional</h2>
+                <p class="section-subtitle">Atendimentos e recebido no mes</p>
+            </div>
+        </div>
+
+        <div class="professional-summary-list">
+            @forelse($resumoProfissionaisMes as $profissional)
+                <article class="professional-summary-item">
+                    <div>
+                        <strong>{{ $profissional->nome }}</strong>
+                        <span>{{ $profissional->total_mes }} atendimentos</span>
+                    </div>
+                    <b>R$ {{ number_format($profissional->recebido_mes, 2, ',', '.') }}</b>
+                </article>
+            @empty
+                <div class="empty-state">Nenhum profissional ativo cadastrado.</div>
+            @endforelse
         </div>
     </section>
 </div>
 
 <section class="dashboard-panel mt-4">
     <div class="section-title">
-        <h2>Proximos agendamentos</h2>
+        <h2>Agendamentos de hoje em diante</h2>
     </div>
     <div class="table-responsive">
         <table class="table align-middle tabela-dados">
@@ -63,7 +100,13 @@
                     <td>{{ $agendamento->servico->nome }}</td>
                     <td>{{ $agendamento->profissional->nome }}</td>
                     <td>{{ $agendamento->inicio_em->format('d/m H:i') }}</td>
-                    <td><a class="btn btn-sm btn-outline-success" href="https://wa.me/{{ $agendamento->cliente->telefone_normalizado }}?text={{ rawurlencode('Ola, '.$agendamento->cliente->nome.'. Precisamos falar sobre seu agendamento.') }}" target="_blank" rel="noopener">WhatsApp</a></td>
+                    <td>
+                        @if($agendamento->link_whatsapp)
+                            <a class="btn btn-sm btn-outline-success" href="{{ $agendamento->link_whatsapp }}" target="_blank" rel="noopener">WhatsApp</a>
+                        @else
+                            <button class="btn btn-sm btn-outline-secondary" type="button" disabled>Sem telefone</button>
+                        @endif
+                    </td>
                 </tr>
             @endforeach
             </tbody>

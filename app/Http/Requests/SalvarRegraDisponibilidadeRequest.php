@@ -15,9 +15,12 @@ class SalvarRegraDisponibilidadeRequest extends FormRequest
     {
         return [
             'profissional_id' => ['required', 'integer', 'exists:profissionais,id'],
-            'dia_semana' => ['required', 'integer', 'between:0,6'],
+            'dias_semana' => ['required', 'array', 'min:1'],
+            'dias_semana.*' => ['integer', 'between:0,6'],
             'horario_inicio' => ['required', 'date_format:H:i'],
             'horario_fim' => ['required', 'date_format:H:i', 'after:horario_inicio'],
+            'almoco_inicio' => ['nullable', 'required_with:almoco_fim', 'date_format:H:i', 'after:horario_inicio', 'before:horario_fim'],
+            'almoco_fim' => ['nullable', 'required_with:almoco_inicio', 'date_format:H:i', 'after:almoco_inicio', 'before:horario_fim'],
             'ativo' => ['nullable', 'boolean'],
         ];
     }

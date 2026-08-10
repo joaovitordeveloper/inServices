@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Prestador;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SalvarServicoRequest;
+use App\Models\PerfilPrestador;
 use App\Models\Servico;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class ServicosController extends Controller
@@ -32,7 +34,7 @@ class ServicosController extends Controller
                 'intervalo_adicional_minutos' => 0,
                 'status' => 'publicado',
                 'ordem_exibicao' => 0,
-                'antecedencia_minima_minutos' => 60,
+                'antecedencia_minima_minutos' => 30,
                 'limite_dias_futuros' => 30,
                 'permite_escolher_profissional' => true,
             ]),
@@ -42,9 +44,17 @@ class ServicosController extends Controller
 
     public function store(SalvarServicoRequest $request): RedirectResponse
     {
-        $prestador = $this->prestador();
+        $prestador = $this->prestador()->load('assinatura.plano');
+        $limite = $prestador->assinatura?->plano?->quantidade_maxima_servicos;
+
+        if ($limite && $prestador->servicos()->count() >= $limite) {
+            throw ValidationException::withMessages([
+                'nome' => "Seu plano permite cadastrar ate {$limite} servico(s).",
+            ]);
+        }
+
         $servico = $prestador->servicos()->create($this->dados($request));
-        $servico->profissionais()->sync($request->input('profissionais', []));
+        $servico->profissionais()->sync($this->idsProfissionaisDoPrestador($prestador, $request->input('profissionais', [])));
 
         return redirect()->route('prestador.servicos.index')->with('status', 'Servico cadastrado com sucesso.');
     }
@@ -68,7 +78,7 @@ class ServicosController extends Controller
 
         $dados = $this->dados($request, $servico);
         $servico->update($dados);
-        $servico->profissionais()->sync($request->input('profissionais', []));
+        $servico->profissionais()->sync($this->idsProfissionaisDoPrestador($prestador, $request->input('profissionais', [])));
 
         return redirect()->route('prestador.servicos.index')->with('status', 'Servico atualizado com sucesso.');
     }
@@ -113,5 +123,27 @@ class ServicosController extends Controller
     private function prestador()
     {
         return auth()->user()->perfilPrestador()->firstOrFail();
+    }
+
+    private function idsProfissionaisDoPrestador(PerfilPrestador $prestador, array $ids): array
+    {
+        $ids = collect($ids)->map(fn ($id) => (int) $id)->unique()->values();
+
+        if ($ids->isEmpty()) {
+            return [];
+        }
+
+        $validos = $prestador->profissionais()
+            ->whereIn('id', $ids)
+            ->pluck('id')
+            ->all();
+
+        if (count($validos) !== $ids->count()) {
+            throw ValidationException::withMessages([
+                'profissionais' => 'Selecione apenas profissionais cadastrados neste prestador.',
+            ]);
+        }
+
+        return $validos;
     }
 }

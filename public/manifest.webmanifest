@@ -5,9 +5,19 @@
     "start_url": "/login",
     "scope": "/",
     "display": "standalone",
+    "display_override": [
+        "window-controls-overlay",
+        "standalone",
+        "minimal-ui"
+    ],
+    "orientation": "portrait",
     "background_color": "#f4f8ff",
     "theme_color": "#3b6cff",
     "lang": "pt-BR",
+    "categories": [
+        "business",
+        "productivity"
+    ],
     "icons": [
         {
             "src": "/favicon.ico",
@@ -31,6 +41,12 @@
             "sizes": "512x512",
             "type": "image/png",
             "purpose": "maskable"
+        },
+        {
+            "src": "/icons/maskable-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
         }
     ],
     "shortcuts": [

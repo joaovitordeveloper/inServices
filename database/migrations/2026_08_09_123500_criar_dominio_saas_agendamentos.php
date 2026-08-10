@@ -133,7 +133,7 @@ return new class extends Migration
             $table->string('imagem')->nullable();
             $table->string('status')->default('rascunho')->index();
             $table->unsignedInteger('ordem_exibicao')->default(0);
-            $table->unsignedInteger('antecedencia_minima_minutos')->default(60);
+            $table->unsignedInteger('antecedencia_minima_minutos')->default(30);
             $table->unsignedInteger('limite_dias_futuros')->default(30);
             $table->boolean('permite_escolher_profissional')->default(true);
             $table->timestamps();
@@ -188,6 +188,8 @@ return new class extends Migration
             $table->unsignedTinyInteger('dia_semana');
             $table->time('horario_inicio');
             $table->time('horario_fim');
+            $table->time('almoco_inicio')->nullable();
+            $table->time('almoco_fim')->nullable();
             $table->boolean('ativo')->default(true);
             $table->timestamps();
             $table->index(['profissional_id', 'dia_semana', 'ativo']);

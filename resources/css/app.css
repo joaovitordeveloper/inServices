@@ -396,12 +396,24 @@ body {
 }
 
 .multi-tags-field {
+    position: relative;
     border: 1px solid #d7e3f4;
     border-radius: 8px;
     background: #fff;
-    overflow: hidden;
+    overflow: visible;
     cursor: pointer;
     transition: border-color .16s ease, box-shadow .16s ease;
+}
+
+.multi-tags-field::after {
+    content: "";
+    position: absolute;
+    right: .8rem;
+    top: 18px;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 6px solid var(--cor-texto-suave);
+    pointer-events: none;
 }
 
 .multi-tags-field:focus,
@@ -412,12 +424,11 @@ body {
 
 .multi-tags-selected {
     min-height: 42px;
-    padding: .45rem .5rem;
+    padding: .45rem 2rem .45rem .5rem;
     display: flex;
     flex-wrap: wrap;
     gap: .35rem;
     align-items: center;
-    border-bottom: 1px solid var(--cor-borda);
 }
 
 .multi-tags-placeholder {
@@ -451,11 +462,29 @@ body {
 }
 
 .multi-tags-list {
+    position: absolute;
+    z-index: 20;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    display: none;
     max-height: 205px;
     overflow-y: auto;
     padding: .3rem 0;
+    border: 1px solid var(--cor-borda);
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 16px 34px rgba(35, 56, 92, .14);
     scrollbar-width: thin;
     scrollbar-color: #86939d #f1f5fb;
+}
+
+.multi-tags-field.open {
+    z-index: 25;
+}
+
+.multi-tags-field.open .multi-tags-list {
+    display: block;
 }
 
 .multi-tags-list::-webkit-scrollbar {
@@ -766,6 +795,114 @@ body {
     font-weight: 800;
 }
 
+.plan-limit-alert {
+    border: 1px solid rgba(59, 108, 255, .25);
+    border-radius: 8px;
+    background: var(--cor-superficie-suave);
+    padding: .85rem;
+    margin-bottom: 1rem;
+    display: grid;
+    gap: .35rem;
+}
+
+.plan-limit-alert strong {
+    color: var(--cor-texto);
+}
+
+.plan-limit-alert span,
+.plan-limit-alert small {
+    color: var(--cor-texto-suave);
+}
+
+.plan-limit-alert .btn {
+    justify-self: start;
+    margin-top: .25rem;
+}
+
+.table-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .4rem;
+    align-items: center;
+}
+
+.agenda-layout {
+    display: grid;
+    grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+    align-items: start;
+    gap: 1rem;
+}
+
+.agenda-form-panel,
+.agenda-table-panel {
+    min-width: 0;
+}
+
+.agenda-form-panel {
+    position: sticky;
+    top: 1rem;
+}
+
+.agenda-form-panel .row {
+    --bs-gutter-x: .75rem;
+    --bs-gutter-y: .85rem;
+}
+
+.agenda-form-panel .form-label {
+    margin-bottom: .35rem;
+}
+
+.agenda-form-panel .text-muted {
+    display: block;
+    margin-top: .35rem;
+    font-size: .82rem;
+}
+
+.agenda-table-panel .table-responsive {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.agenda-table-panel table {
+    min-width: 680px;
+}
+
+@media (max-width: 1100px) {
+    .agenda-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .agenda-form-panel {
+        position: static;
+    }
+}
+
+@media (max-width: 640px) {
+    .agenda-layout {
+        gap: .85rem;
+    }
+
+    .agenda-form-panel,
+    .agenda-table-panel {
+        padding: 1rem;
+        border-radius: 8px;
+    }
+
+    .agenda-form-panel .col-md-6 {
+        width: 100%;
+    }
+
+    .agenda-form-panel .btn {
+        width: 100%;
+    }
+
+    .agenda-table-panel .table-responsive {
+        margin: 0 -1rem;
+        padding: 0 1rem;
+        width: calc(100% + 2rem);
+    }
+}
+
 @media (max-width: 1200px) {
     .prestador-resumo-grid {
         grid-template-columns: 1fr;
@@ -938,9 +1075,10 @@ body {
 .nav-section {
     display: block;
     color: #8997aa;
-    font-size: .68rem;
-    letter-spacing: .12em;
-    padding: 1.2rem 1.25rem .45rem;
+    font-size: .78rem;
+    font-weight: 800;
+    letter-spacing: .1em;
+    padding: 1.35rem 1.25rem .6rem;
 }
 
 .nav-icon {
@@ -950,17 +1088,22 @@ body {
 }
 
 .app-icon {
-    width: 34px;
-    height: 34px;
+    width: 36px;
+    height: 36px;
     border-radius: 10px;
     display: grid;
     place-items: center;
     flex: 0 0 auto;
     background: var(--cor-superficie-suave);
     color: var(--cor-primaria);
-    font-size: .68rem;
+    font-size: .96rem;
     font-weight: 900;
     letter-spacing: 0;
+}
+
+.app-icon .fa-brands,
+.app-icon .fa-solid {
+    line-height: 1;
 }
 
 .nav-link.active .app-icon,

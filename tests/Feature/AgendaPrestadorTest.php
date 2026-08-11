@@ -73,7 +73,7 @@ class AgendaPrestadorTest extends TestCase
         Profissional::create(['prestador_id' => $prestador->id, 'nome' => 'Ja existe', 'ativo' => true]);
 
         $this->actingAs($usuario)
-            ->post(route('prestador.agenda.profissionais.store'), [
+            ->post(route('prestador.profissionais.store'), [
                 'nome' => 'Segundo profissional',
             ])
             ->assertSessionHasErrors('nome');

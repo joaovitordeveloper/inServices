@@ -16,6 +16,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.datatables.net/2.1.8/css/dataTables.bootstrap5.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body>
@@ -28,21 +29,22 @@
         <nav class="nav flex-column gap-1">
             @if(auth()->user()?->tipo === 'administrador_geral')
                 <span class="nav-section">ADMIN MASTER</span>
-                <a class="nav-link {{ request()->routeIs('admin.painel') ? 'active' : '' }}" href="{{ route('admin.painel') }}"><span class="nav-icon app-icon">D</span><span>Dashboard</span></a>
-                <a class="nav-link {{ request()->routeIs('admin.prestadores.*') ? 'active' : '' }}" href="{{ route('admin.prestadores.index') }}"><span class="nav-icon app-icon">P</span><span>Prestadores</span></a>
-                <a class="nav-link {{ request()->routeIs('admin.planos.*') ? 'active' : '' }}" href="{{ route('admin.planos.index') }}"><span class="nav-icon app-icon">PL</span><span>Planos</span></a>
-                <a class="nav-link {{ request()->routeIs('admin.mensalidades.*') ? 'active' : '' }}" href="{{ route('admin.mensalidades.index') }}"><span class="nav-icon app-icon">M</span><span>Mensalidades</span></a>
-                <a class="nav-link {{ request()->routeIs('conta.*') ? 'active' : '' }}" href="{{ route('conta.edit') }}"><span class="nav-icon app-icon">C</span><span>Conta</span></a>
+                <a class="nav-link {{ request()->routeIs('admin.painel') ? 'active' : '' }}" href="{{ route('admin.painel') }}"><span class="nav-icon app-icon"><i class="fa-solid fa-chart-line"></i></span><span>Dashboard</span></a>
+                <a class="nav-link {{ request()->routeIs('admin.prestadores.*') ? 'active' : '' }}" href="{{ route('admin.prestadores.index') }}"><span class="nav-icon app-icon"><i class="fa-solid fa-store"></i></span><span>Prestadores</span></a>
+                <a class="nav-link {{ request()->routeIs('admin.planos.*') ? 'active' : '' }}" href="{{ route('admin.planos.index') }}"><span class="nav-icon app-icon"><i class="fa-solid fa-layer-group"></i></span><span>Planos</span></a>
+                <a class="nav-link {{ request()->routeIs('admin.mensalidades.*') ? 'active' : '' }}" href="{{ route('admin.mensalidades.index') }}"><span class="nav-icon app-icon"><i class="fa-solid fa-file-invoice-dollar"></i></span><span>Mensalidades</span></a>
+                <a class="nav-link {{ request()->routeIs('conta.*') ? 'active' : '' }}" href="{{ route('conta.edit') }}"><span class="nav-icon app-icon"><i class="fa-solid fa-user-gear"></i></span><span>Conta</span></a>
             @else
                 <span class="nav-section">PRESTADOR</span>
-                <a class="nav-link {{ request()->routeIs('prestador.painel') ? 'active' : '' }}" href="{{ route('prestador.painel') }}"><span class="nav-icon app-icon">D</span><span>Dashboard</span></a>
-                <a class="nav-link {{ request()->routeIs('prestador.servicos.*') ? 'active' : '' }}" href="{{ route('prestador.servicos.index') }}"><span class="nav-icon app-icon">S</span><span>Servicos</span></a>
-                <a class="nav-link {{ request()->routeIs('prestador.agenda.*') ? 'active' : '' }}" href="{{ route('prestador.agenda.index') }}"><span class="nav-icon app-icon">A</span><span>Agenda</span></a>
-                <a class="nav-link {{ request()->routeIs('prestador.clientes.*') ? 'active' : '' }}" href="{{ route('prestador.clientes.index') }}"><span class="nav-icon app-icon">CL</span><span>Clientes</span></a>
-                <a class="nav-link {{ request()->routeIs('prestador.assinatura.*') ? 'active' : '' }}" href="{{ route('prestador.assinatura.edit') }}"><span class="nav-icon app-icon">AS</span><span>Assinatura</span></a>
-                <a class="nav-link {{ request()->routeIs('prestador.mensagens-whatsapp.*') ? 'active' : '' }}" href="{{ route('prestador.mensagens-whatsapp.edit') }}"><span class="nav-icon app-icon">W</span><span>WhatsApp</span></a>
-                <a class="nav-link {{ request()->routeIs('publico.*') ? 'active' : '' }}" href="{{ route('publico.agendamento.index', ['prestador' => optional($prestador ?? auth()->user()?->perfilPrestador)->uuid_publico ?? 'demo']) }}"><span class="nav-icon app-icon">L</span><span>Link</span></a>
-                <a class="nav-link {{ request()->routeIs('conta.*') ? 'active' : '' }}" href="{{ route('conta.edit') }}"><span class="nav-icon app-icon">C</span><span>Conta</span></a>
+                <a class="nav-link {{ request()->routeIs('prestador.painel') ? 'active' : '' }}" href="{{ route('prestador.painel') }}"><span class="nav-icon app-icon"><i class="fa-solid fa-gauge-high"></i></span><span>Dashboard</span></a>
+                <a class="nav-link {{ request()->routeIs('prestador.servicos.*') ? 'active' : '' }}" href="{{ route('prestador.servicos.index') }}"><span class="nav-icon app-icon"><i class="fa-solid fa-briefcase"></i></span><span>Servicos</span></a>
+                <a class="nav-link {{ request()->routeIs('prestador.profissionais.*') ? 'active' : '' }}" href="{{ route('prestador.profissionais.index') }}"><span class="nav-icon app-icon"><i class="fa-solid fa-user-tie"></i></span><span>Profissionais</span></a>
+                <a class="nav-link {{ request()->routeIs('prestador.agenda.*') ? 'active' : '' }}" href="{{ route('prestador.agenda.index') }}"><span class="nav-icon app-icon"><i class="fa-solid fa-calendar-days"></i></span><span>Agenda</span></a>
+                <a class="nav-link {{ request()->routeIs('prestador.clientes.*') ? 'active' : '' }}" href="{{ route('prestador.clientes.index') }}"><span class="nav-icon app-icon"><i class="fa-solid fa-users"></i></span><span>Clientes</span></a>
+                <a class="nav-link {{ request()->routeIs('prestador.assinatura.*') ? 'active' : '' }}" href="{{ route('prestador.assinatura.edit') }}"><span class="nav-icon app-icon"><i class="fa-solid fa-credit-card"></i></span><span>Assinatura</span></a>
+                <a class="nav-link {{ request()->routeIs('prestador.mensagens-whatsapp.*') ? 'active' : '' }}" href="{{ route('prestador.mensagens-whatsapp.edit') }}"><span class="nav-icon app-icon"><i class="fa-brands fa-whatsapp"></i></span><span>WhatsApp</span></a>
+                <a class="nav-link {{ request()->routeIs('publico.*') ? 'active' : '' }}" href="{{ route('publico.agendamento.index', ['prestador' => optional($prestador ?? auth()->user()?->perfilPrestador)->uuid_publico ?? 'demo']) }}"><span class="nav-icon app-icon"><i class="fa-solid fa-link"></i></span><span>Link</span></a>
+                <a class="nav-link {{ request()->routeIs('conta.*') ? 'active' : '' }}" href="{{ route('conta.edit') }}"><span class="nav-icon app-icon"><i class="fa-solid fa-user-gear"></i></span><span>Conta</span></a>
             @endif
         </nav>
     </aside>

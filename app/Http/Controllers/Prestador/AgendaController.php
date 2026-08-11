@@ -3,12 +3,9 @@
 namespace App\Http\Controllers\Prestador;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\SalvarProfissionalRequest;
 use App\Http\Requests\SalvarRegraDisponibilidadeRequest;
 use App\Models\RegraDisponibilidade;
-use App\Services\ServicoTelefone;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class AgendaController extends Controller
@@ -19,36 +16,13 @@ class AgendaController extends Controller
 
         return view('prestador.agenda.index', [
             'prestador' => $prestador,
-            'profissionais' => $prestador->profissionais()->with('regrasDisponibilidade')->orderBy('nome')->get(),
+            'profissionais' => $prestador->profissionais()->where('ativo', true)->with('regrasDisponibilidade')->orderBy('nome')->get(),
             'regras' => RegraDisponibilidade::with('profissional')
                 ->whereHas('profissional', fn ($query) => $query->where('prestador_id', $prestador->id))
                 ->orderBy('dia_semana')
                 ->orderBy('horario_inicio')
                 ->get(),
         ]);
-    }
-
-    public function storeProfissional(SalvarProfissionalRequest $request, ServicoTelefone $telefones): RedirectResponse
-    {
-        $prestador = $this->prestador()->load('assinatura.plano');
-        $limite = $prestador->assinatura?->plano?->quantidade_maxima_profissionais;
-
-        if ($limite && $prestador->profissionais()->count() >= $limite) {
-            throw ValidationException::withMessages([
-                'nome' => "Seu plano permite cadastrar ate {$limite} profissional(is).",
-            ]);
-        }
-
-        $prestador->profissionais()->create([
-            'nome' => $request->string('nome')->toString(),
-            'cargo' => $request->input('cargo'),
-            'telefone' => $request->input('telefone'),
-            'telefone_normalizado' => $telefones->normalizarBrasil($request->input('telefone')),
-            'email' => $request->input('email'),
-            'ativo' => true,
-        ]);
-
-        return redirect()->route('prestador.agenda.index')->with('status', 'Profissional cadastrado com sucesso.');
     }
 
     public function storeRegra(SalvarRegraDisponibilidadeRequest $request): RedirectResponse

@@ -11,19 +11,25 @@ use App\Models\Plano;
 use App\Models\User;
 use App\Services\ServicoTelefone;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-use Illuminate\View\View;
 
 class CadastroPrestadorController extends Controller
 {
-    public function create(): View
+    private const DIAS_TESTE_GRATUITO = 15;
+
+    public function create(): Response
     {
-        return view('auth.cadastro-prestador', [
-            'planos' => Plano::where('ativo', true)->orderBy('valor_mensal')->get(),
-        ]);
+        return response()
+            ->view('auth.cadastro-prestador', [
+                'planos' => Plano::where('ativo', true)->orderBy('valor_mensal')->get(),
+                'diasTesteGratuito' => self::DIAS_TESTE_GRATUITO,
+            ])
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->header('Pragma', 'no-cache');
     }
 
     public function store(CadastrarPrestadorRequest $request, ServicoTelefone $telefones): RedirectResponse
@@ -65,7 +71,7 @@ class CadastroPrestadorController extends Controller
                 'status' => 'teste',
                 'data_inicio' => now()->toDateString(),
                 'data_proximo_vencimento' => now()->addMonth()->toDateString(),
-                'periodo_gratuito_ate' => now()->addDays(7)->toDateString(),
+                'periodo_gratuito_ate' => now()->addDays(self::DIAS_TESTE_GRATUITO)->toDateString(),
                 'renovacao_automatica' => false,
                 'observacoes' => 'Assinatura criada pelo cadastro publico.',
             ]);
@@ -78,7 +84,7 @@ class CadastroPrestadorController extends Controller
                 'valor_original' => $plano->valor_mensal,
                 'valor_final' => $plano->valor_mensal,
                 'data_emissao' => now()->toDateString(),
-                'data_vencimento' => now()->addDays(7)->toDateString(),
+                'data_vencimento' => now()->addDays(self::DIAS_TESTE_GRATUITO)->toDateString(),
                 'status' => 'pendente',
                 'observacao' => 'Mensalidade inicial gerada no cadastro.',
             ]);

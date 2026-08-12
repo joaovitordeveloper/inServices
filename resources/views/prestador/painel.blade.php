@@ -1,13 +1,31 @@
 @extends('layouts.app', ['titulo' => 'Painel do prestador', 'subtitulo' => 'Resumo mensal da agenda, atendimentos e recebimentos.', 'prestador' => $prestador])
 
+@section('after-header')
+@if($prestador->assinatura?->status === 'teste')
+    <section class="trial-banner">
+        <div>
+            <strong>Periodo de teste ativo</strong>
+            <span>
+                Voce esta usando o inServices em teste gratuito ate {{ $prestador->assinatura->periodo_gratuito_ate?->format('d/m/Y') ?? '-' }}.
+                @if($prestador->assinatura->periodo_gratuito_ate)
+                    Restam {{ max(0, today()->diffInDays($prestador->assinatura->periodo_gratuito_ate, false)) }} dia(s).
+                @endif
+            </span>
+        </div>
+        <a class="btn btn-template-primary btn-sm" href="{{ route('prestador.mensalidades.index') }}">Ver mensalidade</a>
+    </section>
+@endif
+@endsection
+
 @section('content')
+<div data-home-dashboard data-home-dashboard-url="{{ route('prestador.painel.dados') }}">
 <div class="prestador-hero"></div>
 
 <div class="metric-grid dashboard-metrics prestador-metrics">
-    <article class="metric-card metric-compact"><span>Total recebido no mes</span><strong>R$ {{ number_format($recebidoMes, 2, ',', '.') }}</strong><small>Servicos agendados no periodo</small></article>
-    <article class="metric-card metric-compact"><span>Atendimentos no mes</span><strong>{{ $atendimentosMes }}</strong><small>Agendamentos nao cancelados</small></article>
-    <article class="metric-card metric-compact"><span>Ticket medio</span><strong>R$ {{ number_format($ticketMedioMes, 2, ',', '.') }}</strong><small>Receita media por atendimento</small></article>
-    <article class="metric-card metric-compact"><span>Agendamentos hoje</span><strong>{{ $agendamentosHoje }}</strong><small>Compromissos do dia</small></article>
+    <article class="metric-card metric-compact"><span>Total recebido no mes</span><strong data-home-metric="recebido_mes">R$ {{ number_format($recebidoMes, 2, ',', '.') }}</strong><small>Servicos agendados no periodo</small></article>
+    <article class="metric-card metric-compact"><span>Atendimentos no mes</span><strong data-home-metric="atendimentos_mes">{{ $atendimentosMes }}</strong><small>Agendamentos nao cancelados</small></article>
+    <article class="metric-card metric-compact"><span>Ticket medio</span><strong data-home-metric="ticket_medio_mes">R$ {{ number_format($ticketMedioMes, 2, ',', '.') }}</strong><small>Receita media por atendimento</small></article>
+    <article class="metric-card metric-compact"><span>Agendamentos hoje</span><strong data-home-metric="agendamentos_hoje">{{ $agendamentosHoje }}</strong><small>Compromissos do dia</small></article>
 </div>
 
 <div class="content-grid prestador-resumo-grid">
@@ -23,9 +41,9 @@
         </div>
 
         <div class="resumo-linhas">
-            <div class="resumo-linha"><span>Total recebido</span><strong>R$ {{ number_format($recebidoMes, 2, ',', '.') }}</strong><i style="width: {{ $percentualRecebidoMes }}%"></i><small>Meta do mes: R$ {{ number_format($metaRecebimentoMes, 2, ',', '.') }}</small></div>
-            <div class="resumo-linha"><span>Atendimentos</span><strong>{{ $atendimentosMes }}</strong><i style="width: {{ min(100, $atendimentosMes * 10) }}%"></i></div>
-            <div class="resumo-linha"><span>Ticket medio</span><strong>R$ {{ number_format($ticketMedioMes, 2, ',', '.') }}</strong><i style="width: {{ min(100, $ticketMedioMes) }}%"></i></div>
+            <div class="resumo-linha"><span>Total recebido</span><strong data-home-metric="recebido_mes">R$ {{ number_format($recebidoMes, 2, ',', '.') }}</strong><i data-home-bar="percentual_recebido_mes" style="width: {{ $percentualRecebidoMes }}%"></i><small>Meta do mes: <span data-home-metric="meta_recebimento_mes">R$ {{ number_format($metaRecebimentoMes, 2, ',', '.') }}</span></small></div>
+            <div class="resumo-linha"><span>Atendimentos</span><strong data-home-metric="atendimentos_mes">{{ $atendimentosMes }}</strong><i data-home-bar-fixed="atendimentos_mes" style="width: {{ min(100, $atendimentosMes * 10) }}%"></i></div>
+            <div class="resumo-linha"><span>Ticket medio</span><strong data-home-metric="ticket_medio_mes">R$ {{ number_format($ticketMedioMes, 2, ',', '.') }}</strong><i data-home-bar-money="ticket_medio_mes" style="width: {{ min(100, $ticketMedioMes) }}%"></i></div>
         </div>
     </section>
 
@@ -35,10 +53,10 @@
                 <h2>Agenda de hoje</h2>
                 <p class="section-subtitle">Agendamentos por profissional</p>
             </div>
-            <strong class="today-count">{{ $agendamentosHoje }}</strong>
+            <strong class="today-count" data-home-metric="agendamentos_hoje">{{ $agendamentosHoje }}</strong>
         </div>
 
-        <div class="agenda-profissionais">
+        <div class="agenda-profissionais" data-home-agenda-hoje>
             @forelse($agendamentosHojePorProfissional as $profissional)
                 <article class="agenda-profissional-card">
                     <div>
@@ -70,7 +88,7 @@
             </div>
         </div>
 
-        <div class="professional-summary-list">
+        <div class="professional-summary-list" data-home-resumo-profissionais>
             @forelse($resumoProfissionaisMes as $profissional)
                 <article class="professional-summary-item">
                     <div>
@@ -113,4 +131,5 @@
         </table>
     </div>
 </section>
+</div>
 @endsection

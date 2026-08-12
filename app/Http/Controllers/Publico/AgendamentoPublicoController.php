@@ -12,6 +12,7 @@ use App\Models\HistoricoStatusAgendamento;
 use App\Models\Notificacao;
 use App\Models\PerfilPrestador;
 use App\Models\Servico;
+use App\Models\User;
 use App\Services\CalcularHorariosDisponiveis;
 use App\Services\ServicoTelefone;
 use Carbon\CarbonImmutable;
@@ -85,10 +86,18 @@ class AgendamentoPublicoController extends Controller
         ]);
     }
 
-    public function horarios(Request $request, PerfilPrestador $prestador, Servico $servico, CalcularHorariosDisponiveis $calcular): JsonResponse
+    public function horarios(Request $request, PerfilPrestador $prestador, Servico $servico, CalcularHorariosDisponiveis $calcular, VerificarAcessoPrestador $acesso): JsonResponse
     {
         abort_unless($servico->prestador_id === $prestador->id, 404);
         abort_unless($this->clienteIdentificado($prestador), 403);
+
+        $resultadoAcesso = $acesso->executar($prestador);
+
+        if (! $resultadoAcesso['permitido']) {
+            return response()->json([
+                'mensagem' => $resultadoAcesso['alerta'] ?? 'Agenda temporariamente indisponivel.',
+            ], 423);
+        }
 
         $data = CarbonImmutable::parse($request->query('data', now()->toDateString()), config('app.timezone'));
 
@@ -97,12 +106,20 @@ class AgendamentoPublicoController extends Controller
         ]);
     }
 
-    public function confirmar(Request $request, PerfilPrestador $prestador, Servico $servico, CalcularHorariosDisponiveis $calcular): JsonResponse
+    public function confirmar(Request $request, PerfilPrestador $prestador, Servico $servico, CalcularHorariosDisponiveis $calcular, VerificarAcessoPrestador $acesso): JsonResponse
     {
         abort_unless($servico->prestador_id === $prestador->id, 404);
 
         $cliente = $this->clienteIdentificado($prestador);
         abort_unless($cliente, 403);
+
+        $resultadoAcesso = $acesso->executar($prestador);
+
+        if (! $resultadoAcesso['permitido']) {
+            return response()->json([
+                'mensagem' => $resultadoAcesso['alerta'] ?? 'Agenda temporariamente indisponivel.',
+            ], 423);
+        }
 
         $dados = $request->validate([
             'profissional_id' => ['required', 'integer', 'exists:profissionais,id'],
@@ -150,12 +167,12 @@ class AgendamentoPublicoController extends Controller
             ]);
 
             Notificacao::create([
-                'destinatario_type' => Cliente::class,
-                'destinatario_id' => $cliente->id,
+                'destinatario_type' => User::class,
+                'destinatario_id' => $prestador->usuario_id,
                 'prestador_id' => $prestador->id,
-                'titulo' => 'Agendamento confirmado',
-                'corpo' => $servico->nome.' em '.$inicio->format('d/m/Y').' as '.$inicio->format('H:i'),
-                'url' => route('publico.agendamento.index', ['prestador' => $prestador->uuid_publico]),
+                'titulo' => 'Novo agendamento',
+                'corpo' => $cliente->nome.' agendou '.$servico->nome.' para '.$inicio->format('d/m/Y').' as '.$inicio->format('H:i'),
+                'url' => route('prestador.painel'),
                 'dados' => [
                     'agendamento_id' => $agendamento->id,
                     'protocolo' => $agendamento->protocolo_publico,
@@ -172,11 +189,6 @@ class AgendamentoPublicoController extends Controller
                 'servico' => $servico->nome,
                 'profissional' => $agendamento->profissional->nome,
                 'horario' => $agendamento->inicio_em->format('d/m/Y H:i'),
-            ],
-            'notificacao' => [
-                'titulo' => 'Agendamento confirmado',
-                'corpo' => $servico->nome.' em '.$agendamento->inicio_em->format('d/m/Y').' as '.$agendamento->inicio_em->format('H:i'),
-                'url' => route('publico.agendamento.index', ['prestador' => $prestador->uuid_publico]),
             ],
         ], 201);
     }

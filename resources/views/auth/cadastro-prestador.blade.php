@@ -21,7 +21,7 @@
         <div class="login-form-inner cadastro-form-inner">
             <div class="login-brand">inServices</div>
             <h1 id="titulo-cadastro">Criar conta</h1>
-            <p>Escolha um plano e crie o acesso do prestador para iniciar o periodo de teste.</p>
+            <p>Escolha um plano e crie o acesso do prestador para iniciar {{ $diasTesteGratuito }} dias de teste gratuito.</p>
 
             <form method="post" action="{{ route('cadastro.prestador.store') }}" novalidate>
                 @csrf
@@ -84,7 +84,7 @@
         <div class="planos-vitrine">
             <div class="login-art-copy planos-copy">
                 <h2>Escolha seu plano</h2>
-                <p>Comece com teste gratuito e acompanhe tudo pelo painel.</p>
+                <p>Comece com {{ $diasTesteGratuito }} dias de teste gratuito e acompanhe tudo pelo painel.</p>
             </div>
 
             <div class="planos-grid">
@@ -94,6 +94,7 @@
                         <strong>R$ {{ number_format($plano->valor_mensal, 2, ',', '.') }}</strong>
                         <small>por mes</small>
                         <ul>
+                            <li>{{ $diasTesteGratuito }} dias de teste gratuito</li>
                             <li>{{ $plano->quantidade_maxima_servicos ? $plano->quantidade_maxima_servicos.' servicos' : 'Servicos ilimitados' }}</li>
                             <li>{{ $plano->quantidade_maxima_profissionais ? $plano->quantidade_maxima_profissionais.' profissionais' : 'Profissionais ilimitados' }}</li>
                             <li>{{ $plano->permite_web_push ? 'Notificacoes inclusas' : 'Sem notificacoes' }}</li>

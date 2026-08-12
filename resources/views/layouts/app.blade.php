@@ -20,6 +20,26 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body>
+@php
+    $notificacoesTopo = collect();
+    $notificacoesNaoLidas = 0;
+    $ultimaNotificacaoNaoLida = null;
+
+    if (auth()->check()) {
+        $notificacoesTopo = \App\Models\Notificacao::query()
+            ->where('destinatario_type', \App\Models\User::class)
+            ->where('destinatario_id', auth()->id())
+            ->latest()
+            ->limit(6)
+            ->get();
+        $notificacoesNaoLidas = \App\Models\Notificacao::query()
+            ->where('destinatario_type', \App\Models\User::class)
+            ->where('destinatario_id', auth()->id())
+            ->whereNull('lida_em')
+            ->count();
+        $ultimaNotificacaoNaoLida = $notificacoesTopo->firstWhere('lida_em', null);
+    }
+@endphp
 <div class="app-shell">
     <aside class="app-sidebar" id="appSidebar" aria-label="Navegacao principal">
         <a class="brand" href="{{ auth()->user()?->tipo === 'administrador_geral' ? route('admin.painel') : route('prestador.painel') }}">
@@ -42,6 +62,7 @@
                 <a class="nav-link {{ request()->routeIs('prestador.agenda.*') ? 'active' : '' }}" href="{{ route('prestador.agenda.index') }}"><span class="nav-icon app-icon"><i class="fa-solid fa-calendar-days"></i></span><span>Agenda</span></a>
                 <a class="nav-link {{ request()->routeIs('prestador.clientes.*') ? 'active' : '' }}" href="{{ route('prestador.clientes.index') }}"><span class="nav-icon app-icon"><i class="fa-solid fa-users"></i></span><span>Clientes</span></a>
                 <a class="nav-link {{ request()->routeIs('prestador.assinatura.*') ? 'active' : '' }}" href="{{ route('prestador.assinatura.edit') }}"><span class="nav-icon app-icon"><i class="fa-solid fa-credit-card"></i></span><span>Assinatura</span></a>
+                <a class="nav-link {{ request()->routeIs('prestador.mensalidades.*') ? 'active' : '' }}" href="{{ route('prestador.mensalidades.index') }}"><span class="nav-icon app-icon"><i class="fa-solid fa-money-bill-wave"></i></span><span>Mensalidade</span></a>
                 <a class="nav-link {{ request()->routeIs('prestador.mensagens-whatsapp.*') ? 'active' : '' }}" href="{{ route('prestador.mensagens-whatsapp.edit') }}"><span class="nav-icon app-icon"><i class="fa-brands fa-whatsapp"></i></span><span>WhatsApp</span></a>
                 <a class="nav-link {{ request()->routeIs('publico.*') ? 'active' : '' }}" href="{{ route('publico.agendamento.index', ['prestador' => optional($prestador ?? auth()->user()?->perfilPrestador)->uuid_publico ?? 'demo']) }}"><span class="nav-icon app-icon"><i class="fa-solid fa-link"></i></span><span>Link</span></a>
                 <a class="nav-link {{ request()->routeIs('conta.*') ? 'active' : '' }}" href="{{ route('conta.edit') }}"><span class="nav-icon app-icon"><i class="fa-solid fa-user-gear"></i></span><span>Conta</span></a>
@@ -59,6 +80,35 @@
                 @isset($subtitulo)<p>{{ $subtitulo }}</p>@endisset
             </div>
             <div class="header-actions d-flex gap-2 align-items-center">
+                @auth
+                    <div class="notification-menu" data-notification-menu data-notifications-url="{{ route('notificacoes.index') }}" data-notification-latest-id="{{ $notificacoesTopo->max('id') ?? 0 }}">
+                        <button class="notification-bell" type="button" data-notification-toggle aria-label="Abrir notificacoes">
+                            <i class="fa-solid fa-bell"></i>
+                            <span data-notification-count @if($notificacoesNaoLidas === 0) hidden @endif>{{ $notificacoesNaoLidas }}</span>
+                        </button>
+                        <div class="notification-dropdown" data-notification-dropdown hidden>
+                            <div class="notification-dropdown-header">
+                                <strong>Notificacoes</strong>
+                                <form method="post" action="{{ route('notificacoes.lidas') }}" data-notification-read-form @if($notificacoesNaoLidas === 0) hidden @endif>
+                                    @csrf
+                                    @method('patch')
+                                    <button type="submit">Marcar lidas</button>
+                                </form>
+                            </div>
+                            <div class="notification-list" data-notification-list>
+                                @forelse($notificacoesTopo as $notificacao)
+                                    <a class="notification-item {{ $notificacao->lida_em ? '' : 'unread' }}" href="{{ $notificacao->url ?? '#' }}">
+                                        <strong>{{ $notificacao->titulo }}</strong>
+                                        <span>{{ $notificacao->corpo }}</span>
+                                        <small>{{ $notificacao->created_at->format('d/m H:i') }}</small>
+                                    </a>
+                                @empty
+                                    <div class="notification-empty">Nenhuma notificacao por enquanto.</div>
+                                @endforelse
+                            </div>
+                        </div>
+                    </div>
+                @endauth
                 <button class="btn btn-template-primary btn-sm" type="button" data-instalar-pwa>Instalar app</button>
                 @auth
                     <form method="post" action="{{ route('logout') }}">
@@ -68,6 +118,20 @@
                 @endauth
             </div>
         </header>
+        @auth
+            <div class="notification-permission-banner" data-notification-permission hidden @if($ultimaNotificacaoNaoLida) data-latest-title="{{ $ultimaNotificacaoNaoLida->titulo }}" data-latest-body="{{ $ultimaNotificacaoNaoLida->corpo }}" data-latest-url="{{ $ultimaNotificacaoNaoLida->url }}" @endif>
+                <div>
+                    <strong>Ative as notificacoes</strong>
+                    <span>Receba alertas no navegador quando novos agendamentos entrarem.</span>
+                </div>
+                <button class="btn btn-template-primary btn-sm" type="button" data-ativar-notificacoes>Ativar notificacoes</button>
+            </div>
+        @endauth
+        @hasSection('after-header')
+            <div class="after-header-content">
+                @yield('after-header')
+            </div>
+        @endif
         <section class="app-content">
             @yield('content')
         </section>

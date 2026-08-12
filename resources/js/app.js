@@ -21,6 +21,186 @@ $(function () {
         $('[data-instalar-pwa]').hide();
     }
 
+    const mostrarNotificacaoLocal = async function (titulo, corpo, url) {
+        if (! titulo || ! ('Notification' in window) || ! ('serviceWorker' in navigator) || Notification.permission !== 'granted') {
+            return;
+        }
+
+        const registro = await navigator.serviceWorker.ready;
+        registro.showNotification(titulo, {
+            body: corpo || 'Abra o inServices para ver os detalhes.',
+            data: { url: url || window.location.href },
+            icon: '/icons/icon-192.png',
+            badge: '/icons/icon-192.png'
+        });
+    };
+
+    const atualizarAvisoNotificacoes = function () {
+        const $banner = $('[data-notification-permission]');
+
+        if (! $banner.length || ! ('Notification' in window) || ! ('serviceWorker' in navigator)) {
+            $banner.attr('hidden', true);
+            return;
+        }
+
+        if (Notification.permission === 'default') {
+            $banner.removeAttr('hidden');
+            return;
+        }
+
+        $banner.attr('hidden', true);
+    };
+
+    atualizarAvisoNotificacoes();
+
+    $('[data-ativar-notificacoes]').on('click', async function () {
+        if (! ('Notification' in window)) {
+            return;
+        }
+
+        await Notification.requestPermission();
+        atualizarAvisoNotificacoes();
+    });
+
+    $('[data-notification-toggle]').on('click', function (event) {
+        event.stopPropagation();
+        $('[data-notification-dropdown]').prop('hidden', ! $('[data-notification-dropdown]').prop('hidden'));
+    });
+
+    $(document).on('click', function (event) {
+        if (! $(event.target).closest('[data-notification-menu]').length) {
+            $('[data-notification-dropdown]').prop('hidden', true);
+        }
+    });
+
+    const escaparHtml = function (valor) {
+        return $('<div>').text(valor || '').html();
+    };
+
+    const renderizarNotificacoes = function (notificacoes) {
+        const $lista = $('[data-notification-list]');
+
+        if (! $lista.length) {
+            return;
+        }
+
+        if (! notificacoes.length) {
+            $lista.html('<div class="notification-empty">Nenhuma notificacao por enquanto.</div>');
+            return;
+        }
+
+        $lista.html(notificacoes.map(function (notificacao) {
+            const classe = notificacao.lida ? '' : ' unread';
+            const url = notificacao.url || '#';
+
+            return `
+                <a class="notification-item${classe}" href="${escaparHtml(url)}">
+                    <strong>${escaparHtml(notificacao.titulo)}</strong>
+                    <span>${escaparHtml(notificacao.corpo)}</span>
+                    <small>${escaparHtml(notificacao.criada_em)}</small>
+                </a>
+            `;
+        }).join(''));
+    };
+
+    const atualizarNotificacoesTopo = function (dados, avisarNovidade = false) {
+        const $menu = $('[data-notification-menu]');
+        const $contador = $('[data-notification-count]');
+        const $formLidas = $('[data-notification-read-form]');
+        const ultimaIdAtual = Number($menu.data('notification-latest-id')) || 0;
+        const novaUltimaId = Number(dados.ultima_id) || 0;
+
+        $contador.text(dados.nao_lidas || 0).prop('hidden', ! dados.nao_lidas);
+        $formLidas.prop('hidden', ! dados.nao_lidas);
+        renderizarNotificacoes(dados.notificacoes || []);
+
+        if (avisarNovidade && novaUltimaId > ultimaIdAtual) {
+            const nova = (dados.notificacoes || []).find((notificacao) => Number(notificacao.id) === novaUltimaId);
+            mostrarNotificacaoLocal(nova?.titulo, nova?.corpo, nova?.url);
+        }
+
+        $menu.data('notification-latest-id', novaUltimaId);
+    };
+
+    const buscarNotificacoesTopo = function (avisarNovidade = true) {
+        const url = $('[data-notification-menu]').data('notifications-url');
+
+        if (! url) {
+            return;
+        }
+
+        $.getJSON(url).done(function (dados) {
+            atualizarNotificacoesTopo(dados, avisarNovidade);
+        });
+    };
+
+    if ($('[data-notification-menu]').length) {
+        setInterval(function () {
+            buscarNotificacoesTopo(true);
+        }, 2000);
+    }
+
+    const atualizarDadosHome = function () {
+        const $dashboard = $('[data-home-dashboard]');
+        const url = $dashboard.data('home-dashboard-url');
+
+        if (! url) {
+            return;
+        }
+
+        $.getJSON(url).done(function (dados) {
+            Object.entries(dados.metricas || {}).forEach(function ([chave, valor]) {
+                $(`[data-home-metric="${chave}"]`).text(valor);
+            });
+
+            $('[data-home-bar="percentual_recebido_mes"]').css('width', `${dados.metricas?.percentual_recebido_mes || 0}%`);
+            $('[data-home-bar-fixed="atendimentos_mes"]').css('width', `${Math.min(100, (Number(dados.metricas?.atendimentos_mes) || 0) * 10)}%`);
+
+            const ticketNumerico = (dados.metricas?.ticket_medio_mes || '0').toString().replace(/\D/g, '');
+            $('[data-home-bar-money="ticket_medio_mes"]').css('width', `${Math.min(100, (Number(ticketNumerico) || 0) / 100)}%`);
+
+            const agendaHoje = dados.agenda_hoje || [];
+            $('[data-home-agenda-hoje]').html(agendaHoje.length ? agendaHoje.map(function (profissional) {
+                const itens = profissional.agendamentos.length ? profissional.agendamentos.map(function (agendamento) {
+                    return `
+                        <div class="agenda-dia-item">
+                            <time>${escaparHtml(agendamento.horario)}</time>
+                            <span>${escaparHtml(agendamento.cliente)}</span>
+                            <small>${escaparHtml(agendamento.servico)}</small>
+                        </div>
+                    `;
+                }).join('') : '<p class="empty-line">Sem agendamentos hoje.</p>';
+
+                return `
+                    <article class="agenda-profissional-card">
+                        <div>
+                            <strong>${escaparHtml(profissional.nome)}</strong>
+                            <span>${profissional.total} hoje</span>
+                        </div>
+                        ${itens}
+                    </article>
+                `;
+            }).join('') : '<div class="empty-state">Nenhum profissional ativo cadastrado.</div>');
+
+            const resumoProfissionais = dados.resumo_profissionais || [];
+            $('[data-home-resumo-profissionais]').html(resumoProfissionais.length ? resumoProfissionais.map(function (profissional) {
+                return `
+                    <article class="professional-summary-item">
+                        <div>
+                            <strong>${escaparHtml(profissional.nome)}</strong>
+                            <span>${profissional.total_mes} atendimentos</span>
+                        </div>
+                        <b>${escaparHtml(profissional.recebido_mes)}</b>
+                    </article>
+                `;
+            }).join('') : '<div class="empty-state">Nenhum profissional ativo cadastrado.</div>');
+        });
+    };
+
+    if ($('[data-home-dashboard]').length) {
+        setInterval(atualizarDadosHome, 2000);
+    }
+
     $('[data-bs-toggle="tooltip"]').each(function () {
         new bootstrap.Tooltip(this);
     });
@@ -338,6 +518,8 @@ $(function () {
 
     const voltarParaServicos = function () {
         esconderEnvioChat();
+        $('[data-chat-finished]').attr('hidden', true);
+        $('.chat-thread').removeAttr('hidden');
         $('[data-service-flow]').attr('hidden', true);
         $('[data-service-strip]').removeAttr('hidden');
         $('[data-chat-service-link]').removeClass('active');
@@ -415,39 +597,25 @@ $(function () {
             return;
         }
 
-        $menu.removeAttr('hidden');
-        $contador.text((Number($contador.text()) || 0) + 1);
-        $lista.prepend(`
+        const card = `
             <div class="chat-appointment-card">
                 <strong>${agendamento.servico}</strong>
                 <span>${agendamento.horario} com ${agendamento.profissional}</span>
                 <small>Protocolo: ${agendamento.protocolo}</small>
             </div>
-        `);
+        `;
+
+        $menu.removeAttr('hidden');
+        $contador.text((Number($contador.text()) || 0) + 1);
+        $lista.prepend(card);
+        $('[data-final-appointments]').html($lista.html());
     };
 
-    const mostrarNotificacaoAgendamento = async function (notificacao) {
-        if (! notificacao || ! ('Notification' in window) || ! ('serviceWorker' in navigator)) {
-            return;
-        }
-
-        let permissao = Notification.permission;
-
-        if (permissao === 'default') {
-            permissao = await Notification.requestPermission();
-        }
-
-        if (permissao !== 'granted') {
-            return;
-        }
-
-        const registro = await navigator.serviceWorker.ready;
-        registro.showNotification(notificacao.titulo || 'Agendamento confirmado', {
-            body: notificacao.corpo || 'Seu agendamento foi salvo.',
-            data: { url: notificacao.url || window.location.href },
-            icon: '/icons/icon-192.png',
-            badge: '/icons/icon-192.png'
-        });
+    const mostrarTelaFinalAgendamento = function (resposta) {
+        $('.chat-thread').attr('hidden', true);
+        $('[data-chat-finished-message]').text(resposta.mensagem || 'Seu agendamento foi salvo com sucesso.');
+        $('[data-final-appointments]').html($('[data-client-appointments]').html()).attr('hidden', true);
+        $('[data-chat-finished]').removeAttr('hidden');
     };
 
     const salvarAgendamento = function (acao) {
@@ -470,11 +638,9 @@ $(function () {
             }
         }).done(function (resposta) {
             $('[data-time-choice]').text(acao.texto).removeAttr('hidden');
-            $('[data-final-chat-hint]').text(resposta.mensagem || 'Agendamento salvo com sucesso.').removeAttr('hidden');
             adicionarAgendamentoNaLista(resposta.agendamento);
-            mostrarNotificacaoAgendamento(resposta.notificacao);
             $('#horarios [data-slot-time].active').prop('disabled', true);
-            carregarHorarios();
+            mostrarTelaFinalAgendamento(resposta);
         }).fail(function (erro) {
             const mensagem = erro.responseJSON?.mensagem || 'Nao foi possivel salvar este agendamento. Escolha outro horario.';
             $('[data-final-chat-hint]').text(mensagem).removeAttr('hidden');
@@ -495,6 +661,12 @@ $(function () {
         $lista.prop('hidden', ! $lista.prop('hidden'));
         rolarChatParaFinal();
     });
+
+    $('[data-final-show-appointments]').on('click', function () {
+        $('[data-final-appointments]').prop('hidden', ! $('[data-final-appointments]').prop('hidden'));
+    });
+
+    $('[data-final-new-appointment]').on('click', voltarParaServicos);
 
     $('[data-chat-send-button]').on('click', function () {
         if (! acaoChatPendente) {

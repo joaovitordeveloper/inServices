@@ -75,35 +75,37 @@
                 @else
                     <div class="chat-appointments" data-client-appointments hidden></div>
                 @endif
-                <div class="chat-bubble bot">Perfeito. Agora escolha o servico desejado.</div>
+                @if($acesso['permitido'])
+                    <div class="chat-bubble bot">Perfeito. Agora escolha o servico desejado.</div>
 
-                <div class="chat-options" data-service-strip @if($servicoSelecionado) hidden @endif>
-                    @forelse($servicos as $servico)
-                        <a class="chat-option {{ $servicoSelecionado?->id === $servico->id ? 'active' : '' }}" href="{{ route('publico.agendamento.servico', ['prestador' => $prestador->uuid_publico, 'servico' => $servico->uuid_publico]) }}" data-chat-service-link data-service-name="{{ $servico->nome }}" data-service-url="{{ route('publico.agendamento.horarios', ['prestador' => $prestador->uuid_publico, 'servico' => $servico->uuid_publico]) }}" data-confirm-url="{{ route('publico.agendamento.confirmar', ['prestador' => $prestador->uuid_publico, 'servico' => $servico->uuid_publico]) }}">
-                            <span class="chat-service-thumb">
-                                @if($servico->imagem)
-                                    <img src="{{ asset('storage/'.$servico->imagem) }}" alt="{{ $servico->nome }}">
-                                @else
-                                    <span>iS</span>
-                                @endif
-                            </span>
-                            <span class="chat-service-info">
-                                <strong>{{ $servico->nome }}</strong>
-                                <span class="chat-service-meta">
-                                    <span>{{ $servico->duracao_minutos }} min</span>
-                                    @if($servico->preco)
-                                        <span>R$ {{ number_format($servico->preco, 2, ',', '.') }}</span>
+                    <div class="chat-options" data-service-strip @if($servicoSelecionado) hidden @endif>
+                        @forelse($servicos as $servico)
+                            <a class="chat-option {{ $servicoSelecionado?->id === $servico->id ? 'active' : '' }}" href="{{ route('publico.agendamento.servico', ['prestador' => $prestador->uuid_publico, 'servico' => $servico->uuid_publico]) }}" data-chat-service-link data-service-name="{{ $servico->nome }}" data-service-url="{{ route('publico.agendamento.horarios', ['prestador' => $prestador->uuid_publico, 'servico' => $servico->uuid_publico]) }}" data-confirm-url="{{ route('publico.agendamento.confirmar', ['prestador' => $prestador->uuid_publico, 'servico' => $servico->uuid_publico]) }}">
+                                <span class="chat-service-thumb">
+                                    @if($servico->imagem)
+                                        <img src="{{ asset('storage/'.$servico->imagem) }}" alt="{{ $servico->nome }}">
+                                    @else
+                                        <span>iS</span>
                                     @endif
                                 </span>
-                                @if($servico->descricao)
-                                    <span class="chat-service-description">{{ $servico->descricao }}</span>
-                                @endif
-                            </span>
-                        </a>
-                    @empty
-                        <div class="chat-bubble bot warning">Nenhum servico publicado no momento.</div>
-                    @endforelse
-                </div>
+                                <span class="chat-service-info">
+                                    <strong>{{ $servico->nome }}</strong>
+                                    <span class="chat-service-meta">
+                                        <span>{{ $servico->duracao_minutos }} min</span>
+                                        @if($servico->preco)
+                                            <span>R$ {{ number_format($servico->preco, 2, ',', '.') }}</span>
+                                        @endif
+                                    </span>
+                                    @if($servico->descricao)
+                                        <span class="chat-service-description">{{ $servico->descricao }}</span>
+                                    @endif
+                                </span>
+                            </a>
+                        @empty
+                            <div class="chat-bubble bot warning">Nenhum servico publicado no momento.</div>
+                        @endforelse
+                    </div>
+                @endif
 
                 <div class="chat-service-flow" data-service-flow @if(! ($servicoSelecionado && $acesso['permitido'])) hidden @endif>
                     <div class="chat-bubble user service-choice" data-service-choice-name>{{ $servicoSelecionado?->nome }}</div>
@@ -132,6 +134,21 @@
                 </div>
             @endif
         </div>
+
+        @if($clienteIdentificado)
+            <div class="chat-finished-screen" data-chat-finished hidden>
+                <div class="chat-finished-icon">
+                    <span>✓</span>
+                </div>
+                <h2>Agendamento solicitado</h2>
+                <p data-chat-finished-message>Seu agendamento foi salvo com sucesso.</p>
+                <div class="chat-finished-actions">
+                    <button class="btn btn-template-primary" type="button" data-final-show-appointments>Meus agendamentos</button>
+                    <button class="btn btn-outline-primary" type="button" data-final-new-appointment>Solicitar novo agendamento</button>
+                </div>
+                <div class="chat-appointments final-appointments" data-final-appointments hidden></div>
+            </div>
+        @endif
     </section>
 </main>
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>

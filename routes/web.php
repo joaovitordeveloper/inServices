@@ -7,10 +7,12 @@ use App\Http\Controllers\Admin\PrestadoresController;
 use App\Http\Controllers\Auth\CadastroPrestadorController;
 use App\Http\Controllers\Auth\SessaoController;
 use App\Http\Controllers\ContaController;
+use App\Http\Controllers\NotificacoesController;
 use App\Http\Controllers\Prestador\AgendaController;
 use App\Http\Controllers\Prestador\AssinaturaController;
 use App\Http\Controllers\Prestador\ClientesController;
 use App\Http\Controllers\Prestador\MensagensWhatsappController;
+use App\Http\Controllers\Prestador\MensalidadesController as PrestadorMensalidadesController;
 use App\Http\Controllers\Prestador\PainelPrestadorController;
 use App\Http\Controllers\Prestador\ProfissionaisController;
 use App\Http\Controllers\Prestador\ServicosController;
@@ -41,6 +43,8 @@ Route::post('/logout', [SessaoController::class, 'destroy'])->middleware('auth')
 Route::middleware('auth')->group(function () {
     Route::get('/minha-conta', [ContaController::class, 'edit'])->name('conta.edit');
     Route::put('/minha-conta/senha', [ContaController::class, 'update'])->name('conta.senha.update');
+    Route::get('/notificacoes', [NotificacoesController::class, 'index'])->name('notificacoes.index');
+    Route::patch('/notificacoes/lidas', [NotificacoesController::class, 'marcarLidas'])->name('notificacoes.lidas');
 
     Route::get('/admin', PainelAdminController::class)->name('admin.painel');
     Route::get('/admin/prestadores', [PrestadoresController::class, 'index'])->name('admin.prestadores.index');
@@ -53,6 +57,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/admin/planos/{plano}', [PlanosController::class, 'destroy'])->name('admin.planos.destroy');
     Route::get('/admin/mensalidades', [MensalidadesController::class, 'index'])->name('admin.mensalidades.index');
     Route::get('/painel', PainelPrestadorController::class)->name('prestador.painel');
+    Route::get('/painel/dados', [PainelPrestadorController::class, 'dados'])->name('prestador.painel.dados');
     Route::get('/painel/servicos', [ServicosController::class, 'index'])->name('prestador.servicos.index');
     Route::get('/painel/servicos/criar', [ServicosController::class, 'create'])->name('prestador.servicos.create');
     Route::post('/painel/servicos', [ServicosController::class, 'store'])->name('prestador.servicos.store');
@@ -73,6 +78,7 @@ Route::middleware('auth')->group(function () {
     Route::put('/painel/clientes/{cliente}', [ClientesController::class, 'update'])->name('prestador.clientes.update');
     Route::get('/painel/assinatura', [AssinaturaController::class, 'edit'])->name('prestador.assinatura.edit');
     Route::put('/painel/assinatura', [AssinaturaController::class, 'update'])->name('prestador.assinatura.update');
+    Route::get('/painel/mensalidade', [PrestadorMensalidadesController::class, 'index'])->name('prestador.mensalidades.index');
     Route::get('/painel/mensagens-whatsapp', [MensagensWhatsappController::class, 'edit'])->name('prestador.mensagens-whatsapp.edit');
     Route::put('/painel/mensagens-whatsapp', [MensagensWhatsappController::class, 'update'])->name('prestador.mensagens-whatsapp.update');
 });

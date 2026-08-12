@@ -23,6 +23,10 @@
             <h1 id="titulo-login">Entrar</h1>
             <p>Acesse sua conta para controlar agenda, servicos e mensalidades.</p>
 
+            @if(session('status'))
+                <div class="auth-alert mb-3">{{ session('status') }}</div>
+            @endif
+
             <form method="post" action="{{ route('login.store') }}" novalidate>
                 @csrf
 

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Assinatura;
 use App\Models\Cliente;
+use App\Models\Mensalidade;
 use App\Models\PerfilPrestador;
 use App\Models\Plano;
 use App\Models\Profissional;
@@ -107,10 +108,152 @@ class AgendamentoPublicoTest extends TestCase
             'profissional_id' => $profissional->id,
             'status' => 'pendente',
         ]);
-        $this->assertDatabaseHas('notificacoes', [
+        $this->assertDatabaseMissing('notificacoes', [
             'prestador_id' => $prestador->id,
             'destinatario_type' => Cliente::class,
-            'titulo' => 'Agendamento confirmado',
         ]);
+        $this->assertDatabaseHas('notificacoes', [
+            'prestador_id' => $prestador->id,
+            'destinatario_type' => User::class,
+            'destinatario_id' => $prestador->usuario_id,
+            'titulo' => 'Novo agendamento',
+        ]);
+    }
+
+    public function test_bloqueia_novos_agendamentos_apos_teste_e_cinco_dias_uteis_de_tolerancia(): void
+    {
+        $this->travelTo('2026-08-11 10:00:00');
+
+        $prestador = PerfilPrestador::create([
+            'usuario_id' => User::factory()->create()->id,
+            'nome_publico' => 'Salao Bloqueado',
+            'slug' => 'salao-bloqueado',
+            'status' => 'ativo',
+        ]);
+
+        $plano = Plano::create([
+            'nome' => 'Basico',
+            'valor_mensal' => 19.90,
+            'periodo_tolerancia_dias' => 5,
+            'ativo' => true,
+        ]);
+
+        $assinatura = Assinatura::create([
+            'prestador_id' => $prestador->id,
+            'plano_id' => $plano->id,
+            'status' => 'teste',
+            'data_inicio' => '2026-07-19',
+            'data_proximo_vencimento' => '2026-08-03',
+            'periodo_gratuito_ate' => '2026-08-03',
+        ]);
+
+        Mensalidade::create([
+            'prestador_id' => $prestador->id,
+            'assinatura_id' => $assinatura->id,
+            'plano_id' => $plano->id,
+            'competencia' => '2026-08-01',
+            'valor_original' => 19.90,
+            'valor_final' => 19.90,
+            'data_emissao' => '2026-08-03',
+            'data_vencimento' => '2026-08-03',
+            'status' => 'pendente',
+        ]);
+
+        $servico = Servico::create([
+            'prestador_id' => $prestador->id,
+            'nome' => 'Corte bloqueado',
+            'slug' => 'corte-bloqueado',
+            'duracao_minutos' => 60,
+            'status' => 'publicado',
+        ]);
+        $profissional = Profissional::create(['prestador_id' => $prestador->id, 'nome' => 'Ana', 'ativo' => true]);
+        $profissional->servicos()->attach($servico->id, ['ativo' => true]);
+
+        $rotaIndex = route('publico.agendamento.index', ['prestador' => $prestador->uuid_publico]);
+
+        $this->post(route('publico.agendamento.identificar', ['prestador' => $prestador->uuid_publico]), [
+            'nome' => 'Cliente Bloqueio',
+            'telefone' => '(11) 98888-1111',
+        ])->assertRedirect($rotaIndex);
+
+        $this->get($rotaIndex)
+            ->assertOk()
+            ->assertSee('Agenda temporariamente indisponivel')
+            ->assertDontSee('Corte bloqueado');
+
+        $this->getJson(route('publico.agendamento.horarios', [
+            'prestador' => $prestador->uuid_publico,
+            'servico' => $servico->uuid_publico,
+            'data' => '2026-08-17',
+        ]))->assertStatus(423);
+
+        $this->postJson(route('publico.agendamento.confirmar', [
+            'prestador' => $prestador->uuid_publico,
+            'servico' => $servico->uuid_publico,
+        ]), [
+            'profissional_id' => $profissional->id,
+            'inicio' => '2026-08-17 09:00:00',
+            'fim' => '2026-08-17 10:00:00',
+        ])->assertStatus(423);
+    }
+
+    public function test_permite_agendamento_dentro_dos_cinco_dias_uteis_de_tolerancia(): void
+    {
+        $this->travelTo('2026-08-10 10:00:00');
+
+        $prestador = PerfilPrestador::create([
+            'usuario_id' => User::factory()->create()->id,
+            'nome_publico' => 'Salao Tolerancia',
+            'slug' => 'salao-tolerancia',
+            'status' => 'ativo',
+        ]);
+
+        $plano = Plano::create([
+            'nome' => 'Basico',
+            'valor_mensal' => 19.90,
+            'periodo_tolerancia_dias' => 5,
+            'ativo' => true,
+        ]);
+
+        $assinatura = Assinatura::create([
+            'prestador_id' => $prestador->id,
+            'plano_id' => $plano->id,
+            'status' => 'teste',
+            'data_inicio' => '2026-07-19',
+            'data_proximo_vencimento' => '2026-08-03',
+            'periodo_gratuito_ate' => '2026-08-03',
+        ]);
+
+        Mensalidade::create([
+            'prestador_id' => $prestador->id,
+            'assinatura_id' => $assinatura->id,
+            'plano_id' => $plano->id,
+            'competencia' => '2026-08-01',
+            'valor_original' => 19.90,
+            'valor_final' => 19.90,
+            'data_emissao' => '2026-08-03',
+            'data_vencimento' => '2026-08-03',
+            'status' => 'pendente',
+        ]);
+
+        $servico = Servico::create([
+            'prestador_id' => $prestador->id,
+            'nome' => 'Corte liberado',
+            'slug' => 'corte-liberado',
+            'duracao_minutos' => 60,
+            'status' => 'publicado',
+        ]);
+        $profissional = Profissional::create(['prestador_id' => $prestador->id, 'nome' => 'Ana', 'ativo' => true]);
+        $profissional->servicos()->attach($servico->id, ['ativo' => true]);
+
+        $this->post(route('publico.agendamento.identificar', ['prestador' => $prestador->uuid_publico]), [
+            'nome' => 'Cliente Tolerancia',
+            'telefone' => '(11) 98888-2222',
+        ]);
+
+        $this->get(route('publico.agendamento.index', ['prestador' => $prestador->uuid_publico]))
+            ->assertOk()
+            ->assertSee('Mensalidade vencida dentro do periodo de tolerancia')
+            ->assertSee('Corte liberado');
     }
 }

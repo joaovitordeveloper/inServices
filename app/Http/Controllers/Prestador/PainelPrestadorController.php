@@ -9,12 +9,48 @@ use App\Models\ModeloMensagemWhatsapp;
 use App\Models\Profissional;
 use App\Models\Servico;
 use App\Services\ServicoWhatsapp;
+use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
 use InvalidArgumentException;
 
 class PainelPrestadorController extends Controller
 {
     public function __invoke(ServicoWhatsapp $whatsapp): View
+    {
+        return view('prestador.painel', $this->dadosPainel($whatsapp));
+    }
+
+    public function dados(ServicoWhatsapp $whatsapp): JsonResponse
+    {
+        $dados = $this->dadosPainel($whatsapp);
+
+        return response()->json([
+            'metricas' => [
+                'recebido_mes' => 'R$ '.number_format($dados['recebidoMes'], 2, ',', '.'),
+                'atendimentos_mes' => $dados['atendimentosMes'],
+                'ticket_medio_mes' => 'R$ '.number_format($dados['ticketMedioMes'], 2, ',', '.'),
+                'agendamentos_hoje' => $dados['agendamentosHoje'],
+                'percentual_recebido_mes' => $dados['percentualRecebidoMes'],
+                'meta_recebimento_mes' => 'R$ '.number_format($dados['metaRecebimentoMes'], 2, ',', '.'),
+            ],
+            'agenda_hoje' => $dados['agendamentosHojePorProfissional']->map(fn (Profissional $profissional): array => [
+                'nome' => $profissional->nome,
+                'total' => $profissional->agendamentos->count(),
+                'agendamentos' => $profissional->agendamentos->map(fn (Agendamento $agendamento): array => [
+                    'horario' => $agendamento->inicio_em->format('H:i'),
+                    'cliente' => $agendamento->cliente->nome,
+                    'servico' => $agendamento->servico->nome,
+                ])->values(),
+            ])->values(),
+            'resumo_profissionais' => $dados['resumoProfissionaisMes']->map(fn (Profissional $profissional): array => [
+                'nome' => $profissional->nome,
+                'total_mes' => $profissional->total_mes,
+                'recebido_mes' => 'R$ '.number_format($profissional->recebido_mes, 2, ',', '.'),
+            ])->values(),
+        ]);
+    }
+
+    private function dadosPainel(ServicoWhatsapp $whatsapp): array
     {
         $prestador = auth()->user()->perfilPrestador()->with('assinatura.plano')->firstOrFail();
         $modeloWhatsapp = ModeloMensagemWhatsapp::firstOrCreate(
@@ -62,7 +98,7 @@ class PainelPrestadorController extends Controller
                 return $profissional;
             });
 
-        return view('prestador.painel', [
+        return [
             'prestador' => $prestador,
             'agendamentosHoje' => Agendamento::when($prestador, fn ($query) => $query->where('prestador_id', $prestador->id))->whereDate('inicio_em', today())->count(),
             'atendimentosMes' => $atendimentosMes,
@@ -106,6 +142,6 @@ class PainelPrestadorController extends Controller
             'servicosAtivos' => Servico::when($prestador, fn ($query) => $query->where('prestador_id', $prestador->id))->where('status', 'publicado')->count(),
             'profissionaisAtivos' => Profissional::when($prestador, fn ($query) => $query->where('prestador_id', $prestador->id))->where('ativo', true)->count(),
             'clientesRecentes' => Cliente::when($prestador, fn ($query) => $query->where('prestador_id', $prestador->id))->latest()->limit(5)->get(),
-        ]);
+        ];
     }
 }

@@ -21,6 +21,10 @@ class CadastroPrestadorTest extends TestCase
             'ativo' => true,
         ]);
 
+        $this->get('/cadastro')
+            ->assertOk()
+            ->assertSee('15 dias de teste gratuito');
+
         $this->post('/cadastro', [
             'plano_id' => $plano->id,
             'nome_responsavel' => 'Ana Responsavel',
@@ -34,7 +38,26 @@ class CadastroPrestadorTest extends TestCase
 
         $this->assertDatabaseHas('users', ['email' => 'ana@example.com', 'tipo' => 'prestador']);
         $this->assertDatabaseHas('perfis_prestadores', ['nome_publico' => 'Clinica Ana', 'status' => 'teste']);
-        $this->assertDatabaseHas('assinaturas', ['plano_id' => $plano->id, 'status' => 'teste']);
+        $this->assertDatabaseHas('assinaturas', [
+            'plano_id' => $plano->id,
+            'status' => 'teste',
+            'periodo_gratuito_ate' => now()->addDays(15)->startOfDay()->toDateTimeString(),
+        ]);
+        $this->assertDatabaseHas('mensalidades', [
+            'plano_id' => $plano->id,
+            'status' => 'pendente',
+            'data_vencimento' => now()->addDays(15)->startOfDay()->toDateTimeString(),
+        ]);
+
+        $this->get('/painel')
+            ->assertOk()
+            ->assertSee('Periodo de teste ativo')
+            ->assertSee('Ver mensalidade');
+
+        $this->get(route('prestador.mensalidades.index'))
+            ->assertOk()
+            ->assertSee('Pagamento da mensalidade')
+            ->assertSee('R$ 99,00');
 
         $admin = User::factory()->create(['tipo' => 'administrador_geral']);
 

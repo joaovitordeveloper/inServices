@@ -20,9 +20,9 @@ class PainelPrestadorController extends Controller
         return view('prestador.painel', $this->dadosPainel($whatsapp));
     }
 
-    public function dados(ServicoWhatsapp $whatsapp): JsonResponse
+    public function dados(): JsonResponse
     {
-        $dados = $this->dadosPainel($whatsapp);
+        $dados = $this->resumoDashboard();
 
         return response()->json([
             'metricas' => [
@@ -50,16 +50,9 @@ class PainelPrestadorController extends Controller
         ]);
     }
 
-    private function dadosPainel(ServicoWhatsapp $whatsapp): array
+    private function resumoDashboard(): array
     {
         $prestador = auth()->user()->perfilPrestador()->with('assinatura.plano')->firstOrFail();
-        $modeloWhatsapp = ModeloMensagemWhatsapp::firstOrCreate(
-            ['prestador_id' => $prestador->id, 'nome' => 'contato'],
-            [
-                'mensagem' => '',
-                'ativo' => true,
-            ],
-        );
         $agendamentosMes = Agendamento::with('servico')
             ->where('prestador_id', $prestador->id)
             ->whereMonth('inicio_em', now()->month)
@@ -108,6 +101,22 @@ class PainelPrestadorController extends Controller
             'ticketMedioMes' => $atendimentosMes > 0 ? $recebidoMes / $atendimentosMes : 0,
             'agendamentosHojePorProfissional' => $agendamentosHojePorProfissional,
             'resumoProfissionaisMes' => $resumoProfissionaisMes,
+        ];
+    }
+
+    private function dadosPainel(ServicoWhatsapp $whatsapp): array
+    {
+        $dados = $this->resumoDashboard();
+        $prestador = $dados['prestador'];
+        $modeloWhatsapp = ModeloMensagemWhatsapp::firstOrCreate(
+            ['prestador_id' => $prestador->id, 'nome' => 'contato'],
+            [
+                'mensagem' => '',
+                'ativo' => true,
+            ],
+        );
+
+        return $dados + [
             'proximosAgendamentos' => Agendamento::with(['cliente', 'servico', 'profissional'])
                 ->when($prestador, fn ($query) => $query->where('prestador_id', $prestador->id))
                 ->where('inicio_em', '>=', today())

@@ -23,7 +23,6 @@
 @php
     $notificacoesTopo = collect();
     $notificacoesNaoLidas = 0;
-    $ultimaNotificacaoNaoLida = null;
 
     if (auth()->check()) {
         $notificacoesTopo = \App\Models\Notificacao::query()
@@ -37,7 +36,6 @@
             ->where('destinatario_id', auth()->id())
             ->whereNull('lida_em')
             ->count();
-        $ultimaNotificacaoNaoLida = $notificacoesTopo->firstWhere('lida_em', null);
     }
 @endphp
 <div class="app-shell">
@@ -119,7 +117,7 @@
             </div>
         </header>
         @auth
-            <div class="notification-permission-banner" data-notification-permission hidden @if($ultimaNotificacaoNaoLida) data-latest-title="{{ $ultimaNotificacaoNaoLida->titulo }}" data-latest-body="{{ $ultimaNotificacaoNaoLida->corpo }}" data-latest-url="{{ $ultimaNotificacaoNaoLida->url }}" @endif>
+            <div class="notification-permission-banner" data-notification-permission hidden>
                 <div>
                     <strong>Ative as notificacoes</strong>
                     <span>Receba alertas no navegador quando novos agendamentos entrarem.</span>

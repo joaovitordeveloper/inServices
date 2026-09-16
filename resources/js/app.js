@@ -73,8 +73,33 @@ $(function () {
         }
     });
 
+    const iniciarPolling = function (executar, intervalo) {
+        let timer = null;
+
+        const parar = function () {
+            clearInterval(timer);
+            timer = null;
+        };
+
+        const iniciar = function () {
+            if (! timer) {
+                timer = setInterval(executar, intervalo);
+            }
+        };
+
+        document.addEventListener('visibilitychange', function () {
+            if (document.hidden) {
+                parar();
+            } else {
+                iniciar();
+            }
+        });
+
+        iniciar();
+    };
+
     const escaparHtml = function (valor) {
-        return $('<div>').text(valor || '').html();
+        return $('<div>').text(valor || '').html().replace(/"/g, '&quot;');
     };
 
     const renderizarNotificacoes = function (notificacoes) {
@@ -135,7 +160,7 @@ $(function () {
     };
 
     if ($('[data-notification-menu]').length) {
-        setInterval(function () {
+        iniciarPolling(function () {
             buscarNotificacoesTopo(true);
         }, 2000);
     }
@@ -198,7 +223,7 @@ $(function () {
     };
 
     if ($('[data-home-dashboard]').length) {
-        setInterval(atualizarDadosHome, 2000);
+        iniciarPolling(atualizarDadosHome, 2000);
     }
 
     $('[data-bs-toggle="tooltip"]').each(function () {

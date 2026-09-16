@@ -23,6 +23,10 @@
             <h1 id="titulo-cadastro">Criar conta</h1>
             <p>Escolha um plano e crie o acesso do prestador para iniciar {{ $diasTesteGratuito }} dias de teste gratuito.</p>
 
+            @if(session('status'))
+                <div class="auth-alert mb-3">{{ session('status') }}</div>
+            @endif
+
             <form method="post" action="{{ route('cadastro.prestador.store') }}" novalidate>
                 @csrf
 

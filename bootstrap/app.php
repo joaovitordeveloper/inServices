@@ -17,10 +17,16 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (TokenMismatchException $exception, Request $request) {
-            if ($request->is('login') || $request->is('cadastro')) {
+            if ($request->is('login')) {
                 return redirect()
                     ->route('login')
-                    ->with('status', 'Sua sessao expirou. Atualizei a tela, tente entrar novamente.');
+                    ->with('status', 'Sua sessao expirou. Atualize a tela e tente entrar novamente.');
+            }
+
+            if ($request->is('cadastro')) {
+                return redirect()
+                    ->route('cadastro.prestador')
+                    ->with('status', 'Sua sessao expirou. Preencha o formulario novamente.');
             }
 
             return null;

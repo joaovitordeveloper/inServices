@@ -56,6 +56,36 @@ php artisan serve
 - `/agendar/{slug-do-prestador}/{slug-do-servico}`: horarios por servico
 - `/agendar/{slug-do-prestador}/{slug-do-servico}/horarios`: JSON de horarios via AJAX
 
+## Fluxo do sistema
+
+Fluxo principal do produto: agendamento publico feito pelo cliente, do link ate a notificacao do prestador. Detalhamento completo por classe em [`docs/documentacao-fluxo-classes.md`](docs/documentacao-fluxo-classes.md).
+
+```mermaid
+flowchart TD
+    A[Cliente acessa link publico /agendar/prestador] --> B{Cliente identificado na sessao?}
+    B -- Nao --> C[Formulario de telefone/nome]
+    C --> D[AgendamentoPublicoController::identificar]
+    D --> E[Cliente::updateOrCreate por telefone normalizado]
+    E --> F[cliente_id salvo na sessao]
+    B -- Sim --> G[Cliente escolhe um Servico]
+    F --> G
+    G --> H[VerificarAcessoPrestador::executar]
+    H --> I{Acesso permitido?}
+    I -- Nao --> J[Agenda bloqueada: alerta de inadimplencia/conta suspensa]
+    I -- Sim --> K[GET horarios: CalcularHorariosDisponiveis::executar]
+    K --> L[Cliente escolhe profissional e horario]
+    L --> M[POST confirmar]
+    M --> N[Revalida acesso e revalida horario ainda livre]
+    N --> O{Horario ainda disponivel?}
+    O -- Nao --> P[Erro 422: escolha outro horario]
+    O -- Sim --> Q[Agendamento::firstOrCreate por chave de idempotencia]
+    Q --> R[HistoricoStatusAgendamento criado]
+    R --> S[Notificacao criada para o prestador]
+    S --> T[Prestador ve o agendamento no painel]
+    T --> U[ServicoWhatsapp::gerarLink monta o link wa.me]
+    U --> V[Prestador confirma manualmente via WhatsApp]
+```
+
 ## Modulos entregues nesta etapa
 
 - Modelagem principal com planos, assinaturas, mensalidades, pagamentos, prestadores, profissionais, servicos, clientes, dispositivos, agenda, notificacoes, push e auditoria.
